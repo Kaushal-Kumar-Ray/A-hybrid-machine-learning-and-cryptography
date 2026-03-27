@@ -2856,83 +2856,149 @@ function laplaceNoise(scale) {
 }
 
 // ================================================================
+// ================================================================
 // BAYESIAN PREDICTION
 // ================================================================
 const bayesFactors = {
-  htraffic: { active: false, weight: 0.35, label: 'High Traffic Volume' },
-  hpacket: { active: false, weight: 0.28, label: 'High Packet Rate' },
-  periodic: { active: false, weight: 0.22, label: 'Periodic Connections' },
-  geo: { active: false, weight: 0.18, label: 'Multiple Geo Sources' },
-  port: { active: false, weight: 0.30, label: 'Port Scanning' },
-  syn: { active: false, weight: 0.40, label: 'SYN Flood Pattern' },
+  htraffic: { active: false, weight: 0.80, label: 'High Traffic Volume' },
+  hpacket:  { active: false, weight: 0.75, label: 'High Packet Rate' },
+  periodic: { active: false, weight: 0.65, label: 'Periodic Connections' },
+  geo:      { active: false, weight: 0.60, label: 'Multiple Geo Sources' },
+  port:     { active: false, weight: 0.78, label: 'Port Scanning' },
+  syn:      { active: false, weight: 0.90, label: 'SYN Flood Pattern' },
 };
 
+// Prior P(Attack) = 5%
+const BAYES_PRIOR = 0.05;
+
 function initBayesian() {
+  // Reset all toggles to off on each init (section revisit)
+  Object.keys(bayesFactors).forEach(key => {
+    bayesFactors[key].active = false;
+    const el = document.getElementById('bf-' + key);
+    if (el) el.classList.remove('active');
+  });
   renderBayesEvidenceBars();
   updateBayesian();
 }
 
 function toggleBayesFactor(key) {
+  if (!bayesFactors[key]) return;
   bayesFactors[key].active = !bayesFactors[key].active;
-  const el = document.getElementById(`bf-${key}`);
+  const el = document.getElementById('bf-' + key);
   if (el) el.classList.toggle('active', bayesFactors[key].active);
   updateBayesian();
 }
 
 function updateBayesian() {
-  // Bayesian posterior: P(attack) = prior * product of likelihoods
-  const prior = 0.05;
-  let logOdds = Math.log(prior / (1 - prior));
+  // Correct Bayesian log-odds update:
+  // logOdds = log(prior / (1 - prior))
+  // For each active evidence e:
+  //   LR = P(e | Attack) / P(e | NoAttack)
+  //   weight = P(e | Attack), assume P(e | NoAttack) = 1 - weight
+  //   logOdds += log(LR) = log(weight / (1 - weight))
+  // posterior = sigmoid(logOdds)
+
+  let logOdds = Math.log(BAYES_PRIOR / (1 - BAYES_PRIOR));
+
   Object.values(bayesFactors).forEach(f => {
-    if (f.active) logOdds += Math.log(f.weight / (1 - f.weight * 0.5));
+    if (f.active) {
+      // Likelihood ratio: P(evidence|Attack) / P(evidence|NoAttack)
+      // weight = P(evidence|Attack), (1 - weight) = P(evidence|NoAttack)
+      const lr = f.weight / (1 - f.weight);
+      logOdds += Math.log(lr);
+    }
   });
+
+  // Sigmoid: posterior probability
   const posterior = 1 / (1 + Math.exp(-logOdds));
   const pct = Math.min(99, Math.max(1, Math.round(posterior * 100)));
 
-  document.getElementById('bayes-prob-value').textContent = pct + '%';
+  // Update probability display
+  const probVal = document.getElementById('bayes-prob-value');
+  if (probVal) probVal.textContent = pct + '%';
 
+  // Update progress bar
   const fillEl = document.getElementById('bayes-prob-fill');
-  fillEl.style.width = pct + '%';
 
-  let color, verdict;
-  if (pct < 20) { color = '#10b981'; verdict = '✅ LOW RISK — Normal network activity'; }
-  else if (pct < 50) { color = '#f59e0b'; verdict = '⚠️ MODERATE RISK — Monitor closely'; }
-  else if (pct < 75) { color = '#f97316'; verdict = '🔶 HIGH RISK — Prepare defensive measures'; }
-  else { color = '#ef4444'; verdict = '🚨 CRITICAL RISK — DDoS attack highly probable!'; }
+  // Determine risk level
+  let color, verdict, boxClass;
+  if (pct < 20) {
+    color   = '#10b981';
+    verdict = '✅ LOW RISK — Normal network activity';
+    boxClass = 'info-box success';
+  } else if (pct < 50) {
+    color   = '#f59e0b';
+    verdict = '⚠️ MODERATE RISK — Monitor closely';
+    boxClass = 'info-box warning';
+  } else if (pct < 75) {
+    color   = '#f97316';
+    verdict = '🔶 HIGH RISK — Prepare defensive measures';
+    boxClass = 'info-box danger';
+  } else {
+    color   = '#ef4444';
+    verdict = '🚨 CRITICAL RISK — DDoS attack highly probable!';
+    boxClass = 'info-box danger';
+  }
 
-  fillEl.style.background = color;
-  document.getElementById('bayes-prob-value').style.color = color;
+  if (fillEl) {
+    fillEl.style.width      = pct + '%';
+    fillEl.style.background = color;
+  }
 
+  if (probVal) probVal.style.color = color;
+
+  // Update verdict box — preserve inline style
   const verdictEl = document.getElementById('bayes-verdict');
-  verdictEl.textContent = verdict;
-  verdictEl.className = pct < 20 ? 'info-box success' : pct < 50 ? 'info-box warning' : 'info-box danger';
+  if (verdictEl) {
+    verdictEl.textContent = verdict;
+    verdictEl.className   = boxClass;
+    verdictEl.style.marginTop   = '12px';
+    verdictEl.style.textAlign   = 'center';
+  }
 
-  // Update summary
-  document.getElementById('summary-attack-prob').textContent = pct + '%';
-  document.getElementById('summary-attack-status').textContent = pct < 20 ? 'Low Risk' : pct < 50 ? '⚠️ Moderate' : '🚨 High Risk';
-  document.getElementById('summary-attack-status').style.color = color;
+  // Update summary dashboard safely (may not exist if summary not yet visited)
+  const sumProb   = document.getElementById('summary-attack-prob');
+  const sumStatus = document.getElementById('summary-attack-status');
+  if (sumProb)   sumProb.textContent   = pct + '%';
+  if (sumStatus) {
+    sumStatus.textContent  = pct < 20 ? 'Low Risk' : pct < 50 ? '⚠️ Moderate' : '🚨 High Risk';
+    sumStatus.style.color  = color;
+  }
 
+  // Re-render evidence bars to reflect updated active state
   renderBayesEvidenceBars();
 }
 
 function renderBayesEvidenceBars() {
   const container = document.getElementById('bayes-evidence-bars');
   if (!container) return;
-  container.innerHTML = '';
+
+  // Build HTML string for all factors
+  let html = '';
   Object.entries(bayesFactors).forEach(([key, f]) => {
-    const wPct = Math.round(f.weight * 100);
-    container.innerHTML += `
+    const wPct      = Math.round(f.weight * 100);
+    const barWidth  = f.active ? wPct : 0;
+    const nameColor = f.active ? 'var(--accent)' : 'var(--text3)';
+    const valColor  = f.active ? 'var(--accent)' : 'var(--text3)';
+    const barBg     = f.active ? 'var(--accent)' : 'var(--border)';
+    const checkmark = f.active ? ' ✓' : '';
+
+    html += `
       <div class="metric-bar-wrap">
         <div class="metric-bar-label">
-          <span class="name" style="color:${f.active ? 'var(--accent)' : 'var(--text3)'}">${f.label} ${f.active ? '✓' : ''}</span>
-          <span class="val" style="color:${f.active ? 'var(--accent)' : 'var(--text3)'}">${wPct}%</span>
+          <span class="name" style="color:${nameColor}">${f.label}${checkmark}</span>
+          <span class="val"  style="color:${valColor}">${wPct}%</span>
         </div>
         <div class="metric-bar-track">
-          <div class="metric-bar-fill" style="width:${f.active ? wPct : 0}%;background:${f.active ? 'var(--accent)' : 'var(--bg3)'};transition:width 0.4s;"></div>
+          <div class="metric-bar-fill"
+               style="width:${barWidth}%;background:${barBg};transition:width 0.4s ease;">
+          </div>
         </div>
-      </div>
-    `;
+      </div>`;
   });
+
+  container.innerHTML = html;
 }
 
 // ================================================================
