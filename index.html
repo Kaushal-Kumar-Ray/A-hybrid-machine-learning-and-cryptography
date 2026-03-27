@@ -1,0 +1,3109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HyMLCPP — Interactive Research Explainer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   FONTS & VARIABLES
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:        #080c14;
+  --bg2:       #0d1220;
+  --bg3:       #121929;
+  --border:    #1e2d45;
+  --border2:   #243450;
+  --accent:    #00e5ff;
+  --accent2:   #7c3aed;
+  --accent3:   #10b981;
+  --accent4:   #f59e0b;
+  --danger:    #ef4444;
+  --text:      #e2e8f0;
+  --text2:     #94a3b8;
+  --text3:     #64748b;
+  --glow:      0 0 20px rgba(0,229,255,0.15);
+  --glow2:     0 0 30px rgba(124,58,237,0.2);
+  --radius:    12px;
+  --sidebar-w: 260px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+#sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  width: var(--sidebar-w);
+  height: 100vh;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+#main {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  padding: 0 0 80px 0;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar-logo {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .logo-text {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+.sidebar-logo .logo-sub {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.sidebar-section-label {
+  padding: 16px 20px 8px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  font-weight: 600;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  cursor: pointer;
+  border-radius: 0;
+  transition: all 0.2s;
+  font-size: 13px;
+  color: var(--text2);
+  position: relative;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0,229,255,0.08), transparent);
+  color: var(--accent);
+  border-right: 2px solid var(--accent);
+}
+.nav-item .nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-item .nav-badge {
+  margin-left: auto;
+  background: var(--accent2);
+  color: white;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 99px;
+}
+
+/* ============================================================
+   TOP HEADER
+   ============================================================ */
+#topbar {
+  position: sticky;
+  top: 0;
+  background: rgba(8,12,20,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 40px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 50;
+}
+.topbar-breadcrumb {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--text3);
+}
+.topbar-breadcrumb span { color: var(--accent); }
+.topbar-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--accent3);
+}
+.status-dot {
+  width: 7px; height: 7px;
+  background: var(--accent3);
+  border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.5; transform:scale(1.4); }
+}
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+.section {
+  display: none;
+  padding: 40px;
+  animation: fadeIn 0.4s ease;
+}
+.section.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity:0; transform:translateY(12px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+.section-hero {
+  margin-bottom: 40px;
+}
+.section-tag {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(0,229,255,0.08);
+  border: 1px solid rgba(0,229,255,0.2);
+  padding: 4px 12px;
+  border-radius: 99px;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(24px, 3vw, 36px);
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.section-title .hl { color: var(--accent); }
+.section-desc {
+  font-size: 15px;
+  color: var(--text2);
+  max-width: 680px;
+  line-height: 1.8;
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card:hover { border-color: var(--border2); box-shadow: var(--glow); }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-box {
+  background: rgba(0,229,255,0.04);
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: var(--text2);
+  margin: 12px 0;
+  line-height: 1.7;
+}
+.info-box.warning {
+  background: rgba(245,158,11,0.06);
+  border-color: rgba(245,158,11,0.2);
+  color: var(--accent4);
+}
+.info-box.success {
+  background: rgba(16,185,129,0.06);
+  border-color: rgba(16,185,129,0.2);
+  color: var(--accent3);
+}
+.info-box.danger {
+  background: rgba(239,68,68,0.06);
+  border-color: rgba(239,68,68,0.2);
+  color: var(--danger);
+}
+
+/* ============================================================
+   CONTROLS
+   ============================================================ */
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+.control-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: 0.05em;
+  min-width: 140px;
+}
+
+/* Sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 4px;
+  background: var(--bg3);
+  border-radius: 99px;
+  outline: none;
+  cursor: pointer;
+  flex: 1;
+  min-width: 120px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0,229,255,0.5);
+  transition: transform 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+.value-badge {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Toggle */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toggle {
+  position: relative;
+  width: 44px; height: 24px;
+  cursor: pointer;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  transition: 0.3s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  left: 3px; top: 3px;
+  background: var(--text3);
+  border-radius: 50%;
+  transition: 0.3s;
+}
+.toggle input:checked + .toggle-slider { background: rgba(0,229,255,0.15); border-color: var(--accent); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); background: var(--accent); }
+.toggle-label { font-size: 13px; color: var(--text2); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: var(--glow); }
+.btn.primary {
+  background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(124,58,237,0.12));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn.danger-btn { border-color: var(--danger); color: var(--danger); }
+
+/* ============================================================
+   CANVAS / CHARTS
+   ============================================================ */
+.canvas-wrap {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.chart-container {
+  position: relative;
+  height: 280px;
+  padding: 12px;
+}
+
+/* ============================================================
+   FLOW DIAGRAM
+   ============================================================ */
+.flow-diagram {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 30px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+.flow-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.flow-box {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  border: 1px solid;
+  min-width: 100px;
+  transition: all 0.3s;
+  animation: flowPulse 3s infinite;
+}
+.flow-box.blue { background: rgba(0,229,255,0.08); border-color: rgba(0,229,255,0.3); color: var(--accent); }
+.flow-box.purple { background: rgba(124,58,237,0.08); border-color: rgba(124,58,237,0.3); color: #a78bfa; }
+.flow-box.green { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.3); color: var(--accent3); }
+.flow-box.red { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: var(--danger); }
+.flow-box.yellow { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.3); color: var(--accent4); }
+
+@keyframes flowPulse {
+  0%,100% { opacity:1; }
+  50% { opacity:0.7; }
+}
+.flow-arrow {
+  font-size: 22px;
+  color: var(--text3);
+  flex-shrink: 0;
+  padding: 0 8px;
+  align-self: center;
+}
+.flow-label { font-size: 10px; color: var(--text3); text-align: center; max-width: 100px; }
+
+/* ============================================================
+   BIT PLANE SECTION
+   ============================================================ */
+#bp-canvas-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.bp-canvas-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+}
+.bp-canvas-box canvas { width: 100% !important; max-width: 300px; height: auto !important; border-radius: 4px; }
+.bp-label {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 8px;
+  font-family: 'Space Mono', monospace;
+}
+
+/* ============================================================
+   SVM SECTION
+   ============================================================ */
+#svm-canvas {
+  width: 100%;
+  height: 320px;
+  display: block;
+  border-radius: 8px;
+}
+
+/* ============================================================
+   RANDOM FOREST SECTION
+   ============================================================ */
+.rf-trees {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.rf-tree {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  flex: 1;
+  min-width: 80px;
+  max-width: 110px;
+  transition: all 0.3s;
+  animation: treeAppear 0.4s ease;
+}
+@keyframes treeAppear {
+  from { opacity:0; transform:scale(0.8); }
+  to { opacity:1; transform:scale(1); }
+}
+.rf-tree.attack { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.07); }
+.rf-tree.normal { border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.07); }
+.rf-tree-icon { font-size: 24px; margin-bottom: 6px; }
+.rf-tree-vote { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
+.rf-tree.attack .rf-tree-vote { color: var(--danger); }
+.rf-tree.normal .rf-tree-vote { color: var(--accent3); }
+.rf-verdict {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 10px;
+  border: 2px solid;
+  margin-top: 16px;
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  transition: all 0.4s;
+}
+.rf-verdict.attack { border-color: var(--danger); background: rgba(239,68,68,0.07); color: var(--danger); }
+.rf-verdict.normal { border-color: var(--accent3); background: rgba(16,185,129,0.07); color: var(--accent3); }
+
+/* ============================================================
+   PERFORMANCE METRICS
+   ============================================================ */
+.metric-bar-wrap {
+  margin: 10px 0;
+}
+.metric-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+.metric-bar-label .name { color: var(--text2); font-weight: 500; }
+.metric-bar-label .val { color: var(--accent); font-family: 'Space Mono', monospace; }
+.metric-bar-track {
+  height: 8px;
+  background: var(--bg3);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.metric-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* ============================================================
+   SUMMARY DASHBOARD CARDS
+   ============================================================ */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.summary-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  transition: all 0.3s;
+}
+.summary-card:hover { transform: translateY(-3px); box-shadow: var(--glow2); }
+.summary-card .sc-icon { font-size: 36px; margin-bottom: 12px; }
+.summary-card .sc-title { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+.summary-card .sc-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+}
+.summary-card .sc-status { font-size: 12px; margin-top: 8px; }
+.summary-card.ok .sc-value { color: var(--accent3); }
+.summary-card.warn .sc-value { color: var(--accent4); }
+.summary-card.crit .sc-value { color: var(--danger); }
+.summary-card.info .sc-value { color: var(--accent); }
+
+/* ============================================================
+   DDOS ALERT BANNER
+   ============================================================ */
+#ddos-alert {
+  display: none;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  padding: 12px 18px;
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 14px;
+  margin: 12px 0;
+  animation: alertPulse 0.5s ease;
+}
+@keyframes alertPulse {
+  0% { transform: scale(0.97); opacity:0; }
+  100% { transform: scale(1); opacity:1; }
+}
+
+/* ============================================================
+   RESEARCH GAPS
+   ============================================================ */
+.gap-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.gap-item:hover { border-color: var(--border2); }
+.gap-num {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  width: 28px; height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.gap-content .gap-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.gap-content .gap-desc { font-size: 13px; color: var(--text2); }
+
+/* ============================================================
+   BAYESIAN TOGGLES
+   ============================================================ */
+.bayes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.bayes-factor {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  user-select: none;
+}
+.bayes-factor:hover { border-color: var(--border2); }
+.bayes-factor.active {
+  background: rgba(0,229,255,0.08);
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+}
+.bayes-factor .bf-icon { font-size: 28px; margin-bottom: 8px; }
+.bayes-factor .bf-label { font-size: 13px; font-weight: 600; color: var(--text2); }
+.bayes-factor.active .bf-label { color: var(--accent); }
+
+.prob-meter {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  margin-top: 16px;
+}
+.prob-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 56px;
+  font-weight: 800;
+  transition: color 0.3s;
+  line-height: 1;
+}
+.prob-label { font-size: 13px; color: var(--text2); margin-top: 8px; }
+.prob-track {
+  height: 12px;
+  background: var(--bg2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 16px 0 0;
+}
+.prob-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s ease, background 0.5s;
+}
+
+/* ============================================================
+   DIFFERENTIAL PRIVACY LEGEND
+   ============================================================ */
+.dp-legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.dp-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text2);
+}
+.dp-legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+
+/* ============================================================
+   PHASE STEPPER
+   ============================================================ */
+.phase-stepper {
+  display: flex;
+  gap: 0;
+  margin: 24px 0;
+  overflow-x: auto;
+}
+.phase-step {
+  flex: 1;
+  min-width: 100px;
+  padding: 14px 10px;
+  border: 1px solid var(--border);
+  text-align: center;
+  position: relative;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.phase-step:first-child { border-radius: 10px 0 0 10px; }
+.phase-step:last-child { border-radius: 0 10px 10px 0; }
+.phase-step:not(:first-child) { border-left: none; }
+.phase-step:hover { background: var(--bg3); }
+.phase-step.active { background: rgba(0,229,255,0.08); border-color: rgba(0,229,255,0.3); }
+.phase-step .ps-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+.phase-step .ps-label { font-size: 12px; font-weight: 600; color: var(--text2); }
+.phase-step.active .ps-label { color: var(--accent); }
+
+/* ============================================================
+   TWO-COL LAYOUT
+   ============================================================ */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .two-col { grid-template-columns: 1fr; }
+  #sidebar { display: none; }
+  #main { margin-left: 0; }
+}
+
+/* ============================================================
+   UPLOAD ZONE
+   ============================================================ */
+.upload-zone {
+  border: 2px dashed var(--border2);
+  border-radius: 10px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg3);
+}
+.upload-zone:hover { border-color: var(--accent); background: rgba(0,229,255,0.04); }
+.upload-zone .uz-icon { font-size: 36px; margin-bottom: 8px; }
+.upload-zone .uz-text { color: var(--text2); font-size: 13px; }
+.upload-zone .uz-hint { color: var(--text3); font-size: 11px; margin-top: 4px; }
+
+/* ============================================================
+   CODE BLOCK
+   ============================================================ */
+.code-block {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: #7dd3fc;
+  line-height: 1.8;
+  overflow-x: auto;
+  white-space: pre;
+}
+.code-comment { color: var(--text3); }
+.code-keyword { color: #c084fc; }
+.code-string { color: #86efac; }
+
+/* ============================================================
+   DIVIDER
+   ============================================================ */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 28px 0;
+}
+
+/* ============================================================
+   INTRO ANIMATION
+   ============================================================ */
+#intro-animation {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 24px 0;
+}
+.intro-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  animation: introCard 0.5s ease backwards;
+}
+.intro-card:nth-child(1) { animation-delay: 0.1s; }
+.intro-card:nth-child(2) { animation-delay: 0.2s; }
+.intro-card:nth-child(3) { animation-delay: 0.3s; }
+.intro-card:nth-child(4) { animation-delay: 0.4s; }
+.intro-card:nth-child(5) { animation-delay: 0.5s; }
+.intro-card:nth-child(6) { animation-delay: 0.6s; }
+@keyframes introCard {
+  from { opacity:0; transform:translateY(20px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.intro-card .ic-icon { font-size: 28px; margin-bottom: 8px; }
+.intro-card .ic-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.intro-card .ic-desc { font-size: 12px; color: var(--text2); }
+
+/* ============================================================
+   MISC
+   ============================================================ */
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Space Mono', monospace;
+}
+.tag.blue { background: rgba(0,229,255,0.1); color: var(--accent); }
+.tag.purple { background: rgba(124,58,237,0.1); color: #a78bfa; }
+.tag.green { background: rgba(16,185,129,0.1); color: var(--accent3); }
+.tag.red { background: rgba(239,68,68,0.1); color: var(--danger); }
+
+.formula {
+  background: var(--bg3);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  margin: 12px 0;
+}
+
+ul.styled { padding-left: 0; list-style: none; }
+ul.styled li {
+  padding: 6px 0 6px 20px;
+  position: relative;
+  color: var(--text2);
+  font-size: 14px;
+}
+ul.styled li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-family: 'Space Mono', monospace;
+}
+
+strong.hl { color: var(--accent); }
+strong.green { color: var(--accent3); }
+strong.yellow { color: var(--accent4); }
+strong.red { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">HyMLCPP</div>
+    <div class="logo-sub">Interactive Research Explainer</div>
+  </div>
+
+  <div class="sidebar-section-label">Overview</div>
+  <a class="nav-item active" onclick="showSection('intro')">
+    <span class="nav-icon">🏠</span> Introduction
+  </a>
+  <a class="nav-item" onclick="showSection('problem')">
+    <span class="nav-icon">☁️</span> Cloud Security Problem
+  </a>
+
+  <div class="sidebar-section-label">Cryptography</div>
+  <a class="nav-item" onclick="showSection('bitplane')">
+    <span class="nav-icon">🖼️</span> Bit Plane Decomposition
+    <span class="nav-badge">DEMO</span>
+  </a>
+  <a class="nav-item" onclick="showSection('selective')">
+    <span class="nav-icon">🔐</span> Selective Encryption
+    <span class="nav-badge">SIM</span>
+  </a>
+
+  <div class="sidebar-section-label">Machine Learning</div>
+  <a class="nav-item" onclick="showSection('svm')">
+    <span class="nav-icon">⚡</span> SVM Classification
+    <span class="nav-badge">LIVE</span>
+  </a>
+  <a class="nav-item" onclick="showSection('ddos')">
+    <span class="nav-icon">🚨</span> DDoS Detection
+    <span class="nav-badge">RT</span>
+  </a>
+  <a class="nav-item" onclick="showSection('rf')">
+    <span class="nav-icon">🌲</span> Random Forest
+    <span class="nav-badge">SIM</span>
+  </a>
+
+  <div class="sidebar-section-label">Privacy & Prediction</div>
+  <a class="nav-item" onclick="showSection('dp')">
+    <span class="nav-icon">🛡️</span> Differential Privacy
+    <span class="nav-badge">DEMO</span>
+  </a>
+  <a class="nav-item" onclick="showSection('bayes')">
+    <span class="nav-icon">🧮</span> Bayesian Prediction
+    <span class="nav-badge">CALC</span>
+  </a>
+
+  <div class="sidebar-section-label">Results</div>
+  <a class="nav-item" onclick="showSection('metrics')">
+    <span class="nav-icon">📊</span> Performance Metrics
+  </a>
+  <a class="nav-item" onclick="showSection('gaps')">
+    <span class="nav-icon">🔍</span> Research Gaps
+  </a>
+  <a class="nav-item" onclick="showSection('summary')">
+    <span class="nav-icon">🎯</span> Final Dashboard
+  </a>
+</nav>
+
+<!-- ============================================================
+     MAIN CONTENT
+     ============================================================ -->
+<main id="main">
+  <div id="topbar">
+    <div class="topbar-breadcrumb">
+      Computers &amp; Security 166 (2026) · <span>104870</span>
+    </div>
+    <div class="topbar-breadcrumb" id="breadcrumb-section" style="margin-left:12px; color:var(--text2);">
+      / Introduction
+    </div>
+    <div class="topbar-status">
+      <div class="status-dot"></div>
+      <span>Live Simulation Active</span>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       A: INTRODUCTION
+       ========================================================= -->
+  <section class="section active" id="sec-intro">
+    <div class="section-hero">
+      <div class="section-tag">📄 Research Paper · 2026</div>
+      <h1 class="section-title">
+        Hybrid Machine Learning &amp; <span class="hl">Cryptography</span><br>
+        for Cloud-IoT Security
+      </h1>
+      <p class="section-desc">
+        Iss research paper mein — <em>HyMLCPP (Hybrid Machine Learning Cryptography Predictive Probabilistic)</em> model — ko present kiya gaya hai jo cloud aur IoT environments mein data security, privacy, aur DDoS attack detection ke liye ek nayi approach deta hai.
+      </p>
+    </div>
+
+    <div class="info-box">
+      <strong>Authors:</strong> Mayank Pathak, Kamta Nath Mishra, Satya Prakash Singh (BIT Mesra, India) · Alok Mishra (NTNU, Norway)<br>
+      <strong>Published:</strong> Computers &amp; Security, Vol. 166, 2026 · DOI: 10.1016/j.cose.2026.104870
+    </div>
+<!-- =========================================================
+     MODULE A: System Architecture
+     ========================================================= -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-icon">🏛️</div>
+    <div>
+      <div class="card-title">System Architecture (SARI)</div>
+      <div class="card-sub">Section 3.1 — Four-entity cloud-IoT security model</div>
+    </div>
+  </div>
+  <div class="section-desc">
+    The HyMLCPP model defines four system entities: <strong>Data Steward (DS<sub>id</sub>)</strong> encrypts data before upload;
+    <strong>Cloud Sphere (CS<sub>id</sub>)</strong> stores, computes, and shares data across 4 cloud types;
+    <strong>End User (EU<sub>id</sub>)</strong> decrypts with a key; and <strong>Unauthorized Party (UnP<sub>id</sub>)</strong> is the adversary.
+    Click any entity for detail.
+  </div>
+  <svg id="arch-svg" viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#00d4ff" opacity=".7"/>
+      </marker>
+      <marker id="arrowRed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#ff1744" opacity=".7"/>
+      </marker>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+        <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:.4"/>
+        <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:.4"/>
+      </linearGradient>
+    </defs>
+    <!-- Background panels -->
+    <rect x="10" y="20" width="160" height="300" rx="12" fill="#0d1117" stroke="#1e2d40"/>
+    <rect x="360" y="20" width="180" height="300" rx="12" fill="url(#cloudGrad)" stroke="#7c3aed" opacity=".6"/>
+    <rect x="730" y="20" width="160" height="300" rx="12" fill="#0d1117" stroke="#1e2d40"/>
+
+    <!-- Animated data flow dots -->
+    <circle class="flow-dot" r="4" fill="#00d4ff" opacity=".9">
+      <animateMotion dur="2.5s" repeatCount="indefinite" path="M185,170 H360"/>
+      <animate attributeName="opacity" values="0;1;1;0" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle class="flow-dot" r="4" fill="#00d4ff" opacity=".9">
+      <animateMotion dur="2.5s" repeatCount="indefinite" begin="1.25s" path="M185,170 H360"/>
+      <animate attributeName="opacity" values="0;1;1;0" dur="2.5s" repeatCount="indefinite" begin="1.25s"/>
+    </circle>
+    <circle class="flow-dot" r="4" fill="#00e676" opacity=".9">
+      <animateMotion dur="2.5s" repeatCount="indefinite" path="M540,170 H730"/>
+      <animate attributeName="opacity" values="0;1;1;0" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle class="flow-dot" r="4" fill="#ff1744" opacity=".9">
+      <animateMotion dur="3s" repeatCount="indefinite" begin=".5s" path="M450,40 Q450,10 450,40"/>
+      <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- DS Arrow -->
+    <line x1="185" y1="170" x2="355" y2="170" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="6 3" opacity=".6" marker-end="url(#arrowhead)"/>
+    <text x="270" y="162" text-anchor="middle" fill="#00d4ff" font-size="10" opacity=".8" font-family="monospace">Encrypted Data</text>
+
+    <!-- CS → EU Arrow -->
+    <line x1="545" y1="170" x2="725" y2="170" stroke="#00e676" stroke-width="1.5" stroke-dasharray="6 3" opacity=".6" marker-end="url(#arrowhead)"/>
+    <text x="635" y="162" text-anchor="middle" fill="#00e676" font-size="10" opacity=".8" font-family="monospace">Cipher → Decrypt</text>
+
+    <!-- UnP Attack arrow -->
+    <line x1="450" y1="85" x2="450" y2="55" stroke="#ff1744" stroke-width="1.5" stroke-dasharray="4 3" opacity=".5" marker-end="url(#arrowRed)"/>
+    <text x="450" y="48" text-anchor="middle" fill="#ff1744" font-size="10" opacity=".8" font-family="monospace">Attack Attempt</text>
+
+    <!-- DATA STEWARD -->
+    <g filter="url(#glow)" onclick="showInfo('ds')">
+      <rect x="30" y="60" width="120" height="60" rx="10" fill="#131a24" stroke="#00d4ff" stroke-width="1.5"/>
+      <text x="90" y="84" text-anchor="middle" fill="#fff" font-size="20">🧑‍💼</text>
+      <text x="90" y="102" text-anchor="middle" fill="#00d4ff" font-size="11" font-weight="bold">Data Steward</text>
+      <text x="90" y="114" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">DS_id</text>
+    </g>
+    <text x="90" y="145" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">Encrypts + Uploads</text>
+    <text x="90" y="157" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">AES-256 + TLS/SSL</text>
+
+    <!-- Cloud Sphere -->
+    <text x="450" y="48" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="bold">CLOUD SPHERE</text>
+    <g onclick="showInfo('cs')">
+      <!-- 4 mini clouds -->
+      <rect x="380" y="80" width="70" height="40" rx="8" fill="#1a1040" stroke="#7c3aed" stroke-width="1"/>
+      <text x="415" y="97" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="bold">PuC</text>
+      <text x="415" y="109" text-anchor="middle" fill="#4a6080" font-size="7" font-family="monospace">Public Cloud</text>
+
+      <rect x="460" y="80" width="70" height="40" rx="8" fill="#1a1040" stroke="#7c3aed" stroke-width="1"/>
+      <text x="495" y="97" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="bold">PrC</text>
+      <text x="495" y="109" text-anchor="middle" fill="#4a6080" font-size="7" font-family="monospace">Private Cloud</text>
+
+      <rect x="380" y="130" width="70" height="40" rx="8" fill="#102010" stroke="#00d4ff" stroke-width="1"/>
+      <text x="415" y="147" text-anchor="middle" fill="#00d4ff" font-size="8" font-weight="bold">PcC</text>
+      <text x="415" y="159" text-anchor="middle" fill="#4a6080" font-size="7" font-family="monospace">Protected Cloud</text>
+
+      <rect x="460" y="130" width="70" height="40" rx="8" fill="#102010" stroke="#00d4ff" stroke-width="1"/>
+      <text x="495" y="147" text-anchor="middle" fill="#00d4ff" font-size="8" font-weight="bold">HyC</text>
+      <text x="495" y="159" text-anchor="middle" fill="#4a6080" font-size="7" font-family="monospace">Hybrid Cloud</text>
+    </g>
+    <text x="450" y="195" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">ML Classifier · Encryption · Storage</text>
+    <text x="450" y="207" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">SVM · Random Forest · Bayesian</text>
+
+    <!-- Layer Labels -->
+    <rect x="370" y="225" width="160" height="16" rx="4" fill="rgba(0,212,255,.06)" stroke="rgba(0,212,255,.2)"/>
+    <text x="450" y="237" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">Layer-1: Interaction</text>
+    <rect x="370" y="248" width="160" height="16" rx="4" fill="rgba(124,58,237,.06)" stroke="rgba(124,58,237,.2)"/>
+    <text x="450" y="260" text-anchor="middle" fill="#a78bfa" font-size="9" font-family="monospace">Layer-2: Processing</text>
+    <rect x="370" y="271" width="160" height="16" rx="4" fill="rgba(0,230,118,.06)" stroke="rgba(0,230,118,.2)"/>
+    <text x="450" y="283" text-anchor="middle" fill="#00e676" font-size="9" font-family="monospace">Layer-3: Output</text>
+
+    <!-- END USER -->
+    <g filter="url(#glow)" onclick="showInfo('eu')">
+      <rect x="750" y="60" width="120" height="60" rx="10" fill="#131a24" stroke="#00e676" stroke-width="1.5"/>
+      <text x="810" y="84" text-anchor="middle" fill="#fff" font-size="20">👤</text>
+      <text x="810" y="102" text-anchor="middle" fill="#00e676" font-size="11" font-weight="bold">End User</text>
+      <text x="810" y="114" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">EU_id</text>
+    </g>
+    <text x="810" y="145" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">Decrypts with key</text>
+    <text x="810" y="157" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">Authorized access</text>
+
+    <!-- UNAUTHORIZED PARTY -->
+    <g filter="url(#glow)" onclick="showInfo('unp')">
+      <rect x="30" y="220" width="120" height="60" rx="10" fill="#131a24" stroke="#ff1744" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="90" y="244" text-anchor="middle" fill="#fff" font-size="20">🕵️</text>
+      <text x="90" y="262" text-anchor="middle" fill="#ff1744" font-size="11" font-weight="bold">Unauthorized</text>
+      <text x="90" y="274" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">UnP_id</text>
+    </g>
+    <!-- Threats arrows from UnP -->
+    <line x1="155" y1="250" x2="355" y2="200" stroke="#ff1744" stroke-width="1" stroke-dasharray="3 4" opacity=".4" marker-end="url(#arrowRed)"/>
+    <text x="810" y="205" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">Non-Fault / Fault</text>
+    <text x="810" y="217" text-anchor="middle" fill="#4a6080" font-size="9" font-family="monospace">classification</text>
+  </svg>
+  <div id="arch-info" class="mono mt16" style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:14px;display:none;"></div>
+</div>
+
+    <div id="intro-animation">
+      <div class="intro-card">
+        <div class="ic-icon">🔐</div>
+        <div class="ic-title">Bit Plane Encryption</div>
+        <div class="ic-desc">Only important image planes encrypted — saves 60% computation time</div>
+      </div>
+      <div class="intro-card">
+        <div class="ic-icon">🤖</div>
+        <div class="ic-title">SVM Classifier</div>
+        <div class="ic-desc">ML decides which image parts need encryption vs which don't</div>
+      </div>
+      <div class="intro-card">
+        <div class="ic-icon">🌪️</div>
+        <div class="ic-title">Chaotic Maps</div>
+        <div class="ic-desc">Unpredictable encryption keys — prevents brute force attacks</div>
+      </div>
+      <div class="intro-card">
+        <div class="ic-icon">🌲</div>
+        <div class="ic-title">Random Forest</div>
+        <div class="ic-desc">Ensemble of decision trees detects DDoS attacks with 99.9% accuracy</div>
+      </div>
+      <div class="intro-card">
+        <div class="ic-icon">🛡️</div>
+        <div class="ic-title">Differential Privacy</div>
+        <div class="ic-desc">Statistical noise added to data — privacy protected without losing utility</div>
+      </div>
+      <div class="intro-card">
+        <div class="ic-icon">🧮</div>
+        <div class="ic-title">Bayesian Predictor</div>
+        <div class="ic-desc">Predicts future DDoS probability based on current traffic patterns</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏗️ System Architecture — 4 Core Phases</div>
+      <div class="phase-stepper">
+        <div class="phase-step active">
+          <div class="ps-num">Phase I</div>
+          <div class="ps-label">Cryptographic<br>Security</div>
+        </div>
+        <div class="phase-step">
+          <div class="ps-num">Phase II</div>
+          <div class="ps-label">Data<br>Classification</div>
+        </div>
+        <div class="phase-step">
+          <div class="ps-num">Phase III</div>
+          <div class="ps-label">Data<br>Allocation</div>
+        </div>
+        <div class="phase-step">
+          <div class="ps-num">Phase IV</div>
+          <div class="ps-label">Fault User<br>Detection</div>
+        </div>
+      </div>
+      <p style="font-size:13px; color:var(--text2);">
+        Phase I uses AES-256 + Chaotic Maps for encryption. Phase II uses SVM to classify sensitive vs non-sensitive data. Phase III distributes data across 4 cloud types (Public, Private, Protected, Hybrid). Phase IV identifies guilty users who leak data.
+      </p>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">📊 Key Results</div>
+        <div class="metric-bar-wrap">
+          <div class="metric-bar-label"><span class="name">Accuracy</span><span class="val">99.9%</span></div>
+          <div class="metric-bar-track"><div class="metric-bar-fill" style="width:99.9%;background:linear-gradient(90deg,var(--accent3),var(--accent));"></div></div>
+        </div>
+        <div class="metric-bar-wrap">
+          <div class="metric-bar-label"><span class="name">Precision</span><span class="val">99.98%</span></div>
+          <div class="metric-bar-track"><div class="metric-bar-fill" style="width:99.98%;background:linear-gradient(90deg,var(--accent),var(--accent2));"></div></div>
+        </div>
+        <div class="metric-bar-wrap">
+          <div class="metric-bar-label"><span class="name">Recall</span><span class="val">99.90%</span></div>
+          <div class="metric-bar-track"><div class="metric-bar-fill" style="width:99.9%;background:linear-gradient(90deg,var(--accent2),#f59e0b);"></div></div>
+        </div>
+        <div class="metric-bar-wrap">
+          <div class="metric-bar-label"><span class="name">False Positive Rate</span><span class="val">1.20%</span></div>
+          <div class="metric-bar-track"><div class="metric-bar-fill" style="width:1.2%;background:var(--danger);"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📁 Datasets Tested</div>
+        <ul class="styled">
+          <li><strong class="hl">CICIDS 2017</strong> — Intrusion Detection Dataset</li>
+          <li><strong class="hl">Kaggle Dataset</strong> — Network traffic data</li>
+          <li><strong class="hl">AIND DDoS</strong> — Dedicated DDoS dataset</li>
+          <li><strong class="hl">CTU-13</strong> — Botnet traffic dataset</li>
+        </ul>
+        <div class="info-box" style="margin-top:12px;">
+          Total Samples: <strong>104,345</strong><br>
+          Benign: 63,561 · Attack: 40,784
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       B: CLOUD SECURITY PROBLEM
+       ========================================================= -->
+  <section class="section" id="sec-problem">
+    <div class="section-hero">
+      <div class="section-tag">☁️ Problem Statement</div>
+      <h1 class="section-title">Cloud-IoT <span class="hl">Security Challenges</span></h1>
+      <p class="section-desc">
+        Jab organizations apna data cloud pe shift karti hain, to kaafi security risks aati hain. Yeh animated flow diagram dikhata hai ki data kaise travel karta hai aur kahan pe threats exist karte hain.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔄 Data Flow &amp; Threat Landscape</div>
+      <div class="flow-diagram">
+        <div class="flow-node">
+          <div class="flow-box blue">📱 IoT Devices<br><small>Data Source</small></div>
+          <div class="flow-label">DSid<br>(Data Steward)</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="flow-box yellow">🔑 Encrypt<br><small>AES-256</small></div>
+          <div class="flow-label">Before Upload</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="flow-box purple">☁️ Cloud Sphere<br><small>4 Cloud Types</small></div>
+          <div class="flow-label">CSid (Storage)</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="flow-box red">⚠️ DDoS Attack<br><small>Threat!</small></div>
+          <div class="flow-label">External Threat</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="flow-box green">🛡️ HyMLCPP<br><small>Detect &amp; Block</small></div>
+          <div class="flow-label">Defense Layer</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="flow-box blue">👤 Auth User<br><small>Access Granted</small></div>
+          <div class="flow-label">EUid</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">⚠️ Issue 1 — Data Leakage</div>
+        <p style="font-size:13px;color:var(--text2);">Third-party cloud providers can access data. Multiple entities have access for trade purposes. Even legitimate enterprises may expose data accidentally.</p>
+        <div class="info-box warning">Risk: Unauthorized data disclosure even in encrypted storage</div>
+      </div>
+      <div class="card">
+        <div class="card-title">💥 Issue 2 — DDoS Attacks</div>
+        <p style="font-size:13px;color:var(--text2);">Distributed Denial of Service overwhelms cloud servers with massive traffic from multiple sources, disrupting legitimate access.</p>
+        <div class="info-box danger">Risk: Service disruption, financial loss, data unavailability</div>
+      </div>
+      <div class="card">
+        <div class="card-title">⏱️ Issue 3 — Computational Cost</div>
+        <p style="font-size:13px;color:var(--text2);">Full image encryption is extremely slow. In real-time IoT environments, speed vs security tradeoff becomes critical.</p>
+        <div class="info-box warning">Risk: System slowdown, battery drain in IoT devices</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔓 Issue 4 — Access Control</div>
+        <p style="font-size:13px;color:var(--text2);">Standard CP-ABE encryption reveals access policies publicly, creating privacy vulnerabilities. Key management remains centralized and risky.</p>
+        <div class="info-box danger">Risk: Policy leakage, single point of failure</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎯 Design Goals of HyMLCPP</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+        <div class="info-box success"><strong>DG1:</strong> Enable secure data sharing between stewards with proper security & privacy</div>
+        <div class="info-box success"><strong>DG2:</strong> Prevent unauthorized access — differentiate fault vs non-fault users</div>
+        <div class="info-box success"><strong>DG3:</strong> Perform efficient computation over data for improved preservation</div>
+        <div class="info-box success"><strong>DG4:</strong> Maintain confidentiality during data distribution with authorized persons only</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       C: BIT PLANE DECOMPOSITION
+       ========================================================= -->
+  <section class="section" id="sec-bitplane">
+    <div class="section-hero">
+      <div class="section-tag">🖼️ Cryptographic Technique · SA3</div>
+      <h1 class="section-title">Bit Plane <span class="hl">Decomposition</span></h1>
+      <p class="section-desc">
+        Every pixel in a digital image is stored as an 8-bit number (0–255). Bit Plane Decomposition alag karta hai each bit layer ko. Higher bit planes (4–7) contain more visual information — these are the ones that need encryption!
+      </p>
+    </div>
+
+    <div class="info-box">
+      💡 <strong>Key Insight:</strong> Instead of encrypting the ENTIRE image (slow!), HyMLCPP uses SVM to identify which bit planes contain important data and encrypts ONLY those. This reduces computational time drastically while maintaining security.
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="card">
+          <div class="card-title">📤 Upload or Use Sample Image</div>
+          <div class="upload-zone" onclick="document.getElementById('img-upload').click()">
+            <div class="uz-icon">🖼️</div>
+            <div class="uz-text">Click to upload an image</div>
+            <div class="uz-hint">PNG, JPG — or use the Generate Sample button</div>
+          </div>
+          <input type="file" id="img-upload" accept="image/*" style="display:none" onchange="loadImage(this)">
+          <button class="btn primary" style="margin-top:12px; width:100%;" onclick="generateSampleImage()">🎨 Generate Sample Image</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🎚️ Select Bit Plane</div>
+          <div class="control-row">
+            <span class="control-label">Bit Plane Level</span>
+            <input type="range" id="bp-slider" min="0" max="7" value="7" oninput="updateBitPlane(this.value)">
+            <span class="value-badge" id="bp-value">7</span>
+          </div>
+          <div id="bp-importance" class="info-box success">
+            ✅ Plane 7 — Most Significant Bit. Contains major visual structure. <strong>Should be encrypted!</strong>
+          </div>
+          <div style="margin-top:12px;">
+            <div class="formula">Pixel bit k = (pixel_value >> k) &amp; 1</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div id="bp-canvas-wrap">
+          <div class="bp-canvas-box">
+            <canvas id="original-canvas" width="200" height="200"></canvas>
+            <div class="bp-label">Original Image</div>
+          </div>
+          <div class="bp-canvas-box">
+            <canvas id="bitplane-canvas" width="200" height="200"></canvas>
+            <div class="bp-label" id="bp-canvas-label">Bit Plane 7</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">📊 Bit Plane Information Content</div>
+          <div id="bp-bars">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔍 How This Works in HyMLCPP</div>
+      <ul class="styled">
+        <li>Image decomposed into 8 bit planes (0 = LSB, 7 = MSB)</li>
+        <li>SVM classifier identifies planes 4–7 as "important" (high visual information)</li>
+        <li>Only those planes get encrypted using chaotic maps + AES-256</li>
+        <li>Planes 0–3 carry minimal visual info — skipping them saves ~50% encryption time</li>
+        <li>During decryption, only the encrypted planes need decryption, then recombined</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       D: SELECTIVE ENCRYPTION
+       ========================================================= -->
+  <section class="section" id="sec-selective">
+    <div class="section-hero">
+      <div class="section-tag">🔐 Optimization · SA1+SA3</div>
+      <h1 class="section-title">Selective <span class="hl">Encryption</span> Demo</h1>
+      <p class="section-desc">
+        Full encryption vs selective encryption — ek taraf security hai, doosri taraf speed. HyMLCPP dono ko balance karta hai by encrypting only the most important bit planes.
+      </p>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">⚙️ Encryption Settings</div>
+
+        <div style="margin:16px 0;">
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="selective-toggle" checked onchange="updateSelectiveEncryption()">
+              <div class="toggle-slider"></div>
+            </label>
+            <span class="toggle-label">Selective Encryption (Smart Mode)</span>
+          </div>
+          <div class="info-box" style="margin-top:10px;" id="enc-mode-desc">
+            ✅ Smart Mode: Only encrypting bit planes 4–7 (4 planes out of 8)
+          </div>
+        </div>
+
+        <div class="control-row">
+          <span class="control-label">Image Size (KB)</span>
+          <input type="range" id="img-size-slider" min="50" max="2000" value="512" oninput="updateSelectiveEncryption()">
+          <span class="value-badge" id="img-size-val">512</span>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Encryption Rounds</span>
+          <input type="range" id="enc-rounds-slider" min="1" max="20" value="10" oninput="updateSelectiveEncryption()">
+          <span class="value-badge" id="enc-rounds-val">10</span>
+        </div>
+
+        <hr class="divider">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px;">
+          <div style="text-align:center; padding:16px; background:var(--bg3); border-radius:8px; border:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">COMPUTATION TIME</div>
+            <div style="font-family:'Syne',sans-serif; font-size:28px; font-weight:800;" id="enc-time">48 ms</div>
+          </div>
+          <div style="text-align:center; padding:16px; background:var(--bg3); border-radius:8px; border:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">DATA ENCRYPTED</div>
+            <div style="font-family:'Syne',sans-serif; font-size:28px; font-weight:800;" id="enc-data">50%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📉 Computation Time Comparison</div>
+        <div class="chart-container">
+          <canvas id="enc-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔬 Avalanche Effect Simulation</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">
+        The Avalanche Effect measures how much the ciphertext changes when one bit of input changes. A good encryption should produce ~50% change. HyMLCPP's chaotic map ensures high avalanche effect.
+      </p>
+      <div class="control-row">
+        <span class="control-label">Bit Change Position</span>
+        <input type="range" id="avalanche-slider" min="0" max="255" value="128" oninput="updateAvalanche(this.value)">
+        <span class="value-badge" id="avalanche-val">128</span>
+      </div>
+      <div style="display:flex; gap:16px; margin-top:12px; flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;padding:14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">ORIGINAL CIPHER (sample)</div>
+          <div class="tag blue" id="original-cipher" style="font-size:10px;word-break:break-all;line-height:1.6;">A3 F7 2C 89 E1 4D</div>
+        </div>
+        <div style="flex:1;min-width:200px;padding:14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">AFTER 1-BIT CHANGE</div>
+          <div class="tag purple" id="changed-cipher" style="font-size:10px;word-break:break-all;line-height:1.6;">D9 14 AB 3F 7E C2</div>
+        </div>
+        <div style="flex:1;min-width:120px;padding:14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border); text-align:center;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">AVALANCHE %</div>
+          <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--accent3);" id="avalanche-pct">48.4%</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       E: SVM CLASSIFICATION
+       ========================================================= -->
+  <section class="section" id="sec-svm">
+    <div class="section-hero">
+      <div class="section-tag">🤖 ML Classifier · SA1</div>
+      <h1 class="section-title">SVM <span class="hl">Decision Boundary</span></h1>
+      <p class="section-desc">
+        Support Vector Machine (SVM) ek ML model hai jo data ko 2 classes mein divide karta hai using a hyperplane. HyMLCPP mein SVM decide karta hai: "Kya yeh image portion encrypt karna chahiye?"
+      </p>
+    </div>
+
+    <div class="info-box">
+      📐 <strong>Formula:</strong> Z = V·M + a where Z = hyperplane, V = weight vector, M = input, a = threshold bias<br>
+      If Z &gt; 0 → Encrypt this portion | If Z ≤ 0 → Skip encryption (save computation)
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">🎚️ SVM Hyperplane Controls</div>
+
+        <div class="control-row">
+          <span class="control-label">Threshold (bias 'a')</span>
+          <input type="range" id="svm-threshold" min="-3" max="3" value="0" step="0.1" oninput="updateSVM()">
+          <span class="value-badge" id="svm-threshold-val">0.0</span>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Margin Width</span>
+          <input type="range" id="svm-margin" min="0.1" max="2" value="0.8" step="0.05" oninput="updateSVM()">
+          <span class="value-badge" id="svm-margin-val">0.8</span>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Kernel</span>
+          <select id="svm-kernel" onchange="updateSVM()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:5px 10px;border-radius:6px;font-size:13px;">
+            <option value="linear">Linear</option>
+            <option value="rbf">RBF (Radial)</option>
+          </select>
+        </div>
+
+        <hr class="divider">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+          <div style="text-align:center;padding:14px;background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.2);border-radius:8px;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">ENCRYPT CLASS</div>
+            <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent);" id="svm-enc-count">--</div>
+          </div>
+          <div style="text-align:center;padding:14px;background:rgba(124,58,237,0.07);border:1px solid rgba(124,58,237,0.2);border-radius:8px;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">SKIP CLASS</div>
+            <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#a78bfa;" id="svm-skip-count">--</div>
+          </div>
+        </div>
+        <div class="formula" style="margin-top:14px;">Margin = 2 / ‖V‖ = <span id="svm-margin-display">1.60</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📈 SVM Decision Boundary (Live)</div>
+        <canvas id="svm-canvas"></canvas>
+        <div style="display:flex;gap:14px;margin-top:10px;font-size:12px;flex-wrap:wrap;">
+          <span>🔵 Encrypt (Sensitive)</span>
+          <span>🔴 Skip (Non-sensitive)</span>
+          <span style="color:var(--accent);">— Decision Boundary</span>
+          <span style="color:var(--text3);">--- Support Vectors</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 Why Linear Kernel?</div>
+      <ul class="styled">
+        <li>Experiments showed linear kernel outperformed RBF &amp; polynomial in both accuracy and speed</li>
+        <li>No non-linear patterns observed in bit-plane feature distribution</li>
+        <li>5-fold cross-validation confirms generalization across unseen image data</li>
+        <li>Parameter C tuned via grid search to balance margin size vs misclassification</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       F: DDOS DETECTION
+       ========================================================= -->
+  <section class="section" id="sec-ddos">
+    <div class="section-hero">
+      <div class="section-tag">🚨 Real-Time Simulation · Chart.js</div>
+      <h1 class="section-title">DDoS <span class="hl">Attack Detection</span></h1>
+      <p class="section-desc">
+        Distributed Denial of Service attack mein target server par bahut zyada traffic flood hoti hai. HyMLCPP ek threshold-based approach use karta hai — agar traffic spike kare threshold ke upar, alert trigger hota hai!
+      </p>
+    </div>
+
+    <div id="ddos-alert">
+      🚨 DDoS ATTACK DETECTED! Traffic exceeded threshold — blocking suspicious sources...
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">⚙️ Simulation Controls</div>
+
+        <div class="control-row">
+          <span class="control-label">Alert Threshold</span>
+          <input type="range" id="ddos-threshold" min="20" max="100" value="60" oninput="updateDDoSThreshold(this.value)">
+          <span class="value-badge" id="ddos-threshold-val">60</span>
+        </div>
+
+        <div class="control-row">
+          <span class="control-label">Attack Intensity</span>
+          <input type="range" id="ddos-intensity" min="0" max="5" value="2" step="0.1" oninput="updateDDoSIntensity(this.value)">
+          <span class="value-badge" id="ddos-intensity-val">2.0</span>
+        </div>
+
+        <div class="toggle-wrap" style="margin:12px 0;">
+          <label class="toggle">
+            <input type="checkbox" id="ddos-attack-toggle" onchange="toggleDDoSAttack(this.checked)">
+            <div class="toggle-slider"></div>
+          </label>
+          <span class="toggle-label">🔴 Simulate DDoS Attack</span>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn" onclick="pauseDDoS()" id="pause-btn">⏸ Pause</button>
+          <button class="btn primary" onclick="resetDDoS()">↺ Reset</button>
+        </div>
+
+        <hr class="divider">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="text-align:center;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">CURRENT TRAFFIC</div>
+            <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent);" id="ddos-current-traffic">--</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">ALERTS TRIGGERED</div>
+            <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--danger);" id="ddos-alert-count">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📡 Live Network Traffic Monitor</div>
+        <div class="chart-container">
+          <canvas id="ddos-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Attack vs Normal Traffic Distribution</div>
+      <div class="chart-container">
+        <canvas id="ddos-dist-chart"></canvas>
+      </div>
+      <div class="info-box" style="margin-top:12px;">
+        From the paper: 104,345 total samples tested · <strong>Benign: 63,561</strong> · <strong>Attack: 40,784</strong> · 
+        The threshold-based approach correctly flags traffic spikes as potential DDoS with ~1.2% false positive rate.
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       G: RANDOM FOREST
+       ========================================================= -->
+  <section class="section" id="sec-rf">
+    <div class="section-hero">
+      <div class="section-tag">🌲 Ensemble Learning · ML Phase</div>
+      <h1 class="section-title">Random Forest <span class="hl">Simulation</span></h1>
+      <p class="section-desc">
+        Random Forest ek ensemble method hai — multiple decision trees banata hai, each tree apni vote deta hai, aur majority decision final answer hota hai. DDoS attack identification ke liye use hota hai.
+      </p>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="card">
+          <div class="card-title">🌳 Forest Configuration</div>
+
+          <div class="control-row">
+            <span class="control-label">Number of Trees</span>
+            <input type="range" id="rf-trees" min="3" max="10" value="5" step="1" oninput="updateRandomForest(this.value)">
+            <span class="value-badge" id="rf-trees-val">5</span>
+          </div>
+
+          <div class="control-row">
+            <span class="control-label">Traffic Features</span>
+            <input type="range" id="rf-traffic" min="1" max="10" value="7" step="1" oninput="updateRandomForest()">
+            <span class="value-badge" id="rf-traffic-val">7</span>
+          </div>
+
+          <div class="info-box" style="margin-top:12px;">
+            <strong>Features Used:</strong> Packet rate, Connection frequency, Source IP diversity, Byte rate, Protocol flags, Flow duration, Port entropy
+          </div>
+
+          <button class="btn primary" style="margin-top:12px;width:100%;" onclick="rerandomForest()">🔀 Re-run Simulation</button>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">📊 Vote Tally</div>
+          <div id="rf-vote-tally" style="display:flex;gap:16px;justify-content:center;padding:12px 0;">
+            <div style="text-align:center;">
+              <div style="font-family:'Syne',sans-serif;font-size:42px;font-weight:800;color:var(--danger);" id="attack-votes">3</div>
+              <div style="font-size:12px;color:var(--text3);">ATTACK votes</div>
+            </div>
+            <div style="font-size:32px;align-self:center;color:var(--text3);">vs</div>
+            <div style="text-align:center;">
+              <div style="font-family:'Syne',sans-serif;font-size:42px;font-weight:800;color:var(--accent3);" id="normal-votes">2</div>
+              <div style="font-size:12px;color:var(--text3);">NORMAL votes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌲 Individual Tree Votes</div>
+        <div id="rf-trees-display" class="rf-trees"></div>
+        <div id="rf-verdict" class="rf-verdict attack">
+          <span>⚠️</span>
+          <span id="rf-verdict-text">ATTACK DETECTED</span>
+          <span id="rf-confidence" style="font-size:14px;">60% confidence</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔬 Confusion Matrix (Paper Results)</div>
+      <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:2px;max-width:400px;margin:0 auto;font-size:12px;">
+        <div style="background:transparent;"></div>
+        <div style="background:var(--bg3);border:1px solid var(--border);padding:8px;text-align:center;font-weight:600;color:var(--accent);">Predicted: Attack</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);padding:8px;text-align:center;font-weight:600;color:var(--accent3);">Predicted: Normal</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);padding:8px;text-align:center;font-weight:600;color:var(--accent);">Actual: Attack</div>
+        <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);padding:14px;text-align:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent3);">53,720<br><small style="font-size:10px;color:var(--text3);">True Positive</small></div>
+        <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);padding:14px;text-align:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--danger);">22<br><small style="font-size:10px;color:var(--text3);">False Negative</small></div>
+        <div style="background:var(--bg3);border:1px solid var(--border);padding:8px;text-align:center;font-weight:600;color:var(--accent3);">Actual: Normal</div>
+        <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);padding:14px;text-align:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--danger);">45<br><small style="font-size:10px;color:var(--text3);">False Positive</small></div>
+        <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);padding:14px;text-align:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent3);">50,558<br><small style="font-size:10px;color:var(--text3);">True Negative</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       H: DIFFERENTIAL PRIVACY
+       ========================================================= -->
+  <section class="section" id="sec-dp">
+    <div class="section-hero">
+      <div class="section-tag">🛡️ Privacy-Preserving · SFP4</div>
+      <h1 class="section-title">Differential <span class="hl">Privacy</span></h1>
+      <p class="section-desc">
+        Differential Privacy ek mathematical guarantee hai ki kisi bhi individual ka data reveal nahi hoga, even agar attacker ko pura database pata ho. Noise add karo data mein — privacy up, accuracy thodi si down.
+      </p>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">⚙️ Privacy Controls</div>
+
+        <div class="control-row">
+          <span class="control-label">Epsilon (ε) — Noise Level</span>
+          <input type="range" id="dp-epsilon" min="0.01" max="5" value="1" step="0.01" oninput="updateDifferentialPrivacy()">
+          <span class="value-badge" id="dp-epsilon-val">1.00</span>
+        </div>
+
+        <div class="info-box" id="dp-privacy-level" style="margin:12px 0;">
+          ⚖️ ε = 1.00 — Moderate privacy. Some noise visible, data still useful.
+        </div>
+
+        <div class="toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" id="dp-show-original" checked onchange="updateDifferentialPrivacy()">
+            <div class="toggle-slider"></div>
+          </label>
+          <span class="toggle-label">Show Original Data</span>
+        </div>
+        <div class="toggle-wrap" style="margin-top:10px;">
+          <label class="toggle">
+            <input type="checkbox" id="dp-show-noisy" checked onchange="updateDifferentialPrivacy()">
+            <div class="toggle-slider"></div>
+          </label>
+          <span class="toggle-label">Show Privatized Data</span>
+        </div>
+
+        <hr class="divider">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="text-align:center;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">PRIVACY LEVEL</div>
+            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent3);" id="dp-privacy-score">High</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">DATA UTILITY</div>
+            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent4);" id="dp-utility-score">72%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 Original vs Privatized Data</div>
+        <div class="dp-legend">
+          <span class="dp-legend-item"><span class="dp-legend-dot" style="background:#00e5ff;"></span> Original</span>
+          <span class="dp-legend-item"><span class="dp-legend-dot" style="background:#f59e0b;"></span> Privatized (with noise)</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="dp-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📉 Privacy-Utility Tradeoff</div>
+      <div class="chart-container" style="height:220px;">
+        <canvas id="dp-tradeoff-chart"></canvas>
+      </div>
+      <div class="info-box" style="margin-top:12px;">
+        <strong>Lower ε → More Privacy, Less Accuracy</strong> | <strong>Higher ε → Less Privacy, Better Accuracy</strong><br>
+        HyMLCPP balances this tradeoff using k-anonymization + differential privacy in combination. The optimal ε is chosen based on data sensitivity level.
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       I: BAYESIAN PREDICTION
+       ========================================================= -->
+       
+  <section class="section" id="sec-bayes">
+    <div class="section-hero">
+      <div class="section-tag">🧮 Predictive Model · Probabilistic</div>
+      <h1 class="section-title">Bayesian <span class="hl">Attack Prediction</span></h1>
+      <p class="section-desc">
+        HyMLCPP ka unique feature — sirf detect nahi karta, <em>predict</em> bhi karta hai! Bayesian framework use karke ye model future DDoS attack ki probability calculate karta hai current network indicators se.
+      </p>
+    </div>
+
+    <div class="info-box">
+      📐 <strong>Bayesian Formula:</strong> P(Attack | Evidence) = P(Evidence | Attack) × P(Attack) / P(Evidence)<br>
+      Multiple evidence factors combine to give final attack probability estimate.
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="card">
+          <div class="card-title">🔍 Network Indicators — Toggle to Activate</div>
+          <div class="bayes-grid">
+            <div class="bayes-factor" id="bf-htraffic" onclick="toggleBayesFactor('htraffic')">
+              <div class="bf-icon">📈</div>
+              <div class="bf-label">High Traffic Volume</div>
+            </div>
+            <div class="bayes-factor" id="bf-hpacket" onclick="toggleBayesFactor('hpacket')">
+              <div class="bf-icon">📦</div>
+              <div class="bf-label">High Packet Rate</div>
+            </div>
+            <div class="bayes-factor" id="bf-periodic" onclick="toggleBayesFactor('periodic')">
+              <div class="bf-icon">🔄</div>
+              <div class="bf-label">Periodic Connections</div>
+            </div>
+            <div class="bayes-factor" id="bf-geo" onclick="toggleBayesFactor('geo')">
+              <div class="bf-icon">🌍</div>
+              <div class="bf-label">Multiple Geo Sources</div>
+            </div>
+            <div class="bayes-factor" id="bf-port" onclick="toggleBayesFactor('port')">
+              <div class="bf-icon">🔌</div>
+              <div class="bf-label">Port Scanning</div>
+            </div>
+            <div class="bayes-factor" id="bf-syn" onclick="toggleBayesFactor('syn')">
+              <div class="bf-icon">🔁</div>
+              <div class="bf-label">SYN Flood Pattern</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">📊 Attack Probability</div>
+          <div class="prob-meter">
+            <div class="prob-value" id="bayes-prob-value">5%</div>
+            <div class="prob-label">Estimated Probability of DDoS Attack</div>
+            <div class="prob-track">
+              <div class="prob-fill" id="bayes-prob-fill" style="width:5%;background:var(--accent3);"></div>
+            </div>
+          </div>
+          <div class="info-box" id="bayes-verdict" style="margin-top:12px; text-align:center;">
+            ✅ LOW RISK — Normal network activity
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">📋 Evidence Weights</div>
+          <div id="bayes-evidence-bars">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       J: PERFORMANCE METRICS
+       ========================================================= -->
+  <section class="section" id="sec-metrics">
+    <div class="section-hero">
+      <div class="section-tag">📊 Experimental Results</div>
+      <h1 class="section-title">Performance <span class="hl">Metrics</span></h1>
+      <p class="section-desc">
+        HyMLCPP ko multiple standard datasets pe test kiya gaya. Yahan aap training size adjust kar sakte hain aur dekhiye kaise metrics change hote hain — just like the paper's ablation study!
+      </p>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">🎚️ Training Configuration</div>
+
+        <div class="control-row">
+          <span class="control-label">Training Size %</span>
+          <input type="range" id="train-size" min="15" max="90" value="85" step="5" oninput="updateMetrics()">
+          <span class="value-badge" id="train-size-val">85%</span>
+        </div>
+
+        <div class="control-row">
+          <span class="control-label">Dataset</span>
+          <select id="dataset-select" onchange="updateMetrics()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:5px 10px;border-radius:6px;font-size:13px;">
+            <option value="cicids">CICIDS 2017</option>
+            <option value="kaggle">Kaggle Dataset</option>
+            <option value="aind">AIND DDoS</option>
+            <option value="ctu">CTU-13</option>
+          </select>
+        </div>
+
+        <hr class="divider">
+        <div id="metrics-bars" style="margin-top:4px;"></div>
+
+        <div class="info-box success" style="margin-top:12px;">
+          📌 Paper Result (85% Training): Accuracy 99.9% · Precision 99.98% · Recall 99.90% · F1 99.94%
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📈 Metrics Visualization</div>
+        <div class="chart-container">
+          <canvas id="metrics-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Comparison with Prior Work</div>
+      <div class="chart-container" style="height:320px;">
+        <canvas id="comparison-chart"></canvas>
+      </div>
+      <div class="info-box" style="margin-top:12px;">
+        HyMLCPP outperforms prior models including MLPAM, Geno-PPML, HRFLR, and others in accuracy, precision, and recall — while also adding predictive capability that existing models lack.
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       K: RESEARCH GAPS
+       ========================================================= -->
+  <section class="section" id="sec-gaps">
+    <div class="section-hero">
+      <div class="section-tag">🔍 Limitations &amp; Future Work</div>
+      <h1 class="section-title">Research <span class="hl">Gaps</span> &amp; Limitations</h1>
+      <p class="section-desc">
+        Koi bhi research paper complete nahi hoti bina apni limitations acknowledge kiye. Yeh section honestly dikhata hai kahan HyMLCPP aur improve ho sakta hai.
+      </p>
+    </div>
+
+    <div class="gap-item">
+      <div class="gap-num">01</div>
+      <div class="gap-content">
+        <div class="gap-title">🔄 Chaotic Map Synchronization Challenge</div>
+        <div class="gap-desc">Chaotic systems ki extreme sensitivity to initial conditions ka matlab hai — sender aur receiver ka perfect sync rehna zaroori hai. Channel noise mein desynchronization ho sakta hai. SKI technique partially mitigate karta hai but not fully.</div>
+      </div>
+    </div>
+    <div class="gap-item">
+      <div class="gap-num">02</div>
+      <div class="gap-content">
+        <div class="gap-title">⚡ Real-Time IoT Constraints</div>
+        <div class="gap-desc">IoT devices mein limited battery aur processing power hota hai. AES-256 encryption + ML inference ka combined overhead in-device pe computationally heavy ho sakta hai for edge IoT scenarios.</div>
+      </div>
+    </div>
+    <div class="gap-item">
+      <div class="gap-num">03</div>
+      <div class="gap-content">
+        <div class="gap-title">🌐 Multi-Cloud Scalability</div>
+        <div class="gap-desc">Experiments primarily performed on simulated cloud environments. Large-scale production deployment across heterogeneous multi-cloud environments (AWS + Azure + GCP) ka performance yet to be validated.</div>
+      </div>
+    </div>
+    <div class="gap-item">
+      <div class="gap-num">04</div>
+      <div class="gap-content">
+        <div class="gap-title">🔁 Adversarial ML Attacks</div>
+        <div class="gap-desc">SVM and Random Forest are vulnerable to adversarial examples. Attacker carefully crafted traffic patterns ko use kar ke classifier ko fool kar sakta hai. Adversarial robustness testing not included in this paper.</div>
+      </div>
+    </div>
+    <div class="gap-item">
+      <div class="gap-num">05</div>
+      <div class="gap-content">
+        <div class="gap-title">📊 Differential Privacy Epsilon Selection</div>
+        <div class="gap-desc">Optimal ε (epsilon) value selection depends on data sensitivity — but in the paper, epsilon is treated as a fixed hyperparameter. Adaptive/dynamic epsilon based on real-time data sensitivity is future work.</div>
+      </div>
+    </div>
+    <div class="gap-item">
+      <div class="gap-num">06</div>
+      <div class="gap-content">
+        <div class="gap-title">🧪 Post-Quantum Cryptography</div>
+        <div class="gap-desc">AES-256 is currently secure, but quantum computers could break it. The paper does not address quantum-resistant alternatives (lattice-based, hash-based cryptography) which will be necessary in the near future.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       L: FINAL SUMMARY DASHBOARD
+       ========================================================= -->
+  <section class="section" id="sec-summary">
+    <div class="section-hero">
+      <div class="section-tag">🎯 Final Dashboard</div>
+      <h1 class="section-title">HyMLCPP <span class="hl">System Status</span></h1>
+      <p class="section-desc">
+        Complete system ka real-time view — encryption status, attack detection, privacy level, aur prediction — sab ek jagah.
+      </p>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card ok">
+        <div class="sc-icon">🔐</div>
+        <div class="sc-title">Encryption Status</div>
+        <div class="sc-value">ACTIVE</div>
+        <div class="sc-status" style="color:var(--accent3);">AES-256 + Chaotic Maps</div>
+      </div>
+      <div class="summary-card ok">
+        <div class="sc-icon">🛡️</div>
+        <div class="sc-title">Bit Planes Encrypted</div>
+        <div class="sc-value" id="summary-planes">4/8</div>
+        <div class="sc-status" style="color:var(--text2);">Planes 4–7 (MSB)</div>
+      </div>
+      <div class="summary-card info">
+        <div class="sc-icon">📡</div>
+        <div class="sc-title">Current Traffic</div>
+        <div class="sc-value" id="summary-traffic">--</div>
+        <div class="sc-status" id="summary-traffic-status" style="color:var(--accent3);">Normal</div>
+      </div>
+      <div class="summary-card ok">
+        <div class="sc-icon">🌲</div>
+        <div class="sc-title">Random Forest</div>
+        <div class="sc-value">READY</div>
+        <div class="sc-status" style="color:var(--accent3);">10 Trees · 99.9% Acc</div>
+      </div>
+      <div class="summary-card ok">
+        <div class="sc-icon">🛡️</div>
+        <div class="sc-title">Privacy Level</div>
+        <div class="sc-value" id="summary-privacy">HIGH</div>
+        <div class="sc-status" style="color:var(--text2);">ε = 1.00</div>
+      </div>
+      <div class="summary-card ok">
+        <div class="sc-icon">🧮</div>
+        <div class="sc-title">Attack Probability</div>
+        <div class="sc-value" id="summary-attack-prob">5%</div>
+        <div class="sc-status" id="summary-attack-status" style="color:var(--accent3);">Low Risk</div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:24px;">
+      <div class="card">
+        <div class="card-title">📋 System Timeline — HyMLCPP Flow</div>
+        <div style="position:relative;padding-left:24px;">
+          <div style="position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--border);"></div>
+          <div style="position:relative;margin-bottom:16px;">
+            <div style="position:absolute;left:-20px;top:4px;width:10px;height:10px;background:var(--accent);border-radius:50%;"></div>
+            <div style="font-size:13px;font-weight:600;">1. IoT Data Collection</div>
+            <div style="font-size:12px;color:var(--text2);">Data gathered from sensors, cloud storage, user devices</div>
+          </div>
+          <div style="position:relative;margin-bottom:16px;">
+            <div style="position:absolute;left:-20px;top:4px;width:10px;height:10px;background:var(--accent2);border-radius:50%;"></div>
+            <div style="font-size:13px;font-weight:600;">2. Pre-processing + SVM Classification</div>
+            <div style="font-size:12px;color:var(--text2);">Normalize data, SVM identifies sensitive portions</div>
+          </div>
+          <div style="position:relative;margin-bottom:16px;">
+            <div style="position:absolute;left:-20px;top:4px;width:10px;height:10px;background:var(--accent4);border-radius:50%;"></div>
+            <div style="font-size:13px;font-weight:600;">3. Selective Bit-Plane Encryption</div>
+            <div style="font-size:12px;color:var(--text2);">Planes 4–7 encrypted using AES-256 + Chaotic Maps</div>
+          </div>
+          <div style="position:relative;margin-bottom:16px;">
+            <div style="position:absolute;left:-20px;top:4px;width:10px;height:10px;background:var(--accent3);border-radius:50%;"></div>
+            <div style="font-size:13px;font-weight:600;">4. Differential Privacy Applied</div>
+            <div style="font-size:12px;color:var(--text2);">Laplace noise added to sensitive fields before cloud upload</div>
+          </div>
+          <div style="position:relative;margin-bottom:16px;">
+            <div style="position:absolute;left:-20px;top:4px;width:10px;height:10px;background:var(--danger);border-radius:50%;"></div>
+            <div style="font-size:13px;font-weight:600;">5. DDoS Detection + Bayesian Prediction</div>
+            <div style="font-size:12px;color:var(--text2);">Threshold + Random Forest detects attacks, Bayesian predicts future</div>
+          </div>
+          <div style="position:relative;">
+            <div style="position:absolute;left:-20px;top:4px;width:10px;height:10px;background:var(--accent);border-radius:50%;"></div>
+            <div style="font-size:13px;font-weight:600;">6. Fault User Identification</div>
+            <div style="font-size:12px;color:var(--text2);">Guilty vs non-guilty users classified, data leakers identified</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏆 HyMLCPP vs Prior Work</div>
+        <div class="chart-container">
+          <canvas id="summary-radar-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px; text-align:center; padding:40px;">
+      <div style="font-size:48px;margin-bottom:16px;">🎓</div>
+      <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:12px;">
+        Paper Successfully Explored!
+      </div>
+      <p style="color:var(--text2);max-width:600px;margin:0 auto;font-size:14px;">
+        Aapne HyMLCPP ka complete interactive tour complete kiya — cryptography, ML classification, DDoS detection, differential privacy, aur Bayesian prediction. Yeh model cloud-IoT security mein ek significant contribution hai.
+      </p>
+      <div style="margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <span class="tag blue">AES-256</span>
+        <span class="tag purple">SVM</span>
+        <span class="tag green">Random Forest</span>
+        <span class="tag blue">Differential Privacy</span>
+        <span class="tag purple">Bayesian Prediction</span>
+        <span class="tag green">99.9% Accuracy</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+// ================================================================
+// NAVIGATION
+// ================================================================
+const sectionMap = {
+  intro: { id: 'sec-intro', label: '/ Introduction' },
+  problem: { id: 'sec-problem', label: '/ Cloud Security Problem' },
+  bitplane: { id: 'sec-bitplane', label: '/ Bit Plane Decomposition' },
+  selective: { id: 'sec-selective', label: '/ Selective Encryption' },
+  svm: { id: 'sec-svm', label: '/ SVM Classification' },
+  ddos: { id: 'sec-ddos', label: '/ DDoS Detection' },
+  rf: { id: 'sec-rf', label: '/ Random Forest' },
+  dp: { id: 'sec-dp', label: '/ Differential Privacy' },
+  bayes: { id: 'sec-bayes', label: '/ Bayesian Prediction' },
+  metrics: { id: 'sec-metrics', label: '/ Performance Metrics' },
+  gaps: { id: 'sec-gaps', label: '/ Research Gaps' },
+  summary: { id: 'sec-summary', label: '/ Final Dashboard' },
+};
+
+let chartsInitialized = {};
+let activeSection = 'intro';
+
+function showSection(name) {
+  // Hide all
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  // Show target
+  const info = sectionMap[name];
+  if (!info) return;
+  document.getElementById(info.id).classList.add('active');
+
+  // Update nav highlight
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(`'${name}'`)) {
+      n.classList.add('active');
+    }
+  });
+
+  // Update breadcrumb
+  document.getElementById('breadcrumb-section').textContent = info.label;
+
+  activeSection = name;
+
+  // Initialize charts lazily
+  if (!chartsInitialized[name]) {
+    chartsInitialized[name] = true;
+    initSectionCharts(name);
+  }
+
+  // Scroll to top of main
+  document.getElementById('main').scrollTo({ top: 0 });
+  window.scrollTo({ top: 0 });
+}
+
+function initSectionCharts(name) {
+  switch(name) {
+    case 'bitplane': initBitPlane(); break;
+    case 'selective': initSelectiveEncryption(); break;
+    case 'svm': initSVM(); break;
+    case 'ddos': initDDoS(); break;
+    case 'rf': initRandomForest(); break;
+    case 'dp': initDifferentialPrivacy(); break;
+    case 'bayes': initBayesian(); break;
+    case 'metrics': initMetrics(); break;
+    case 'summary': initSummary(); break;
+  }
+}
+
+// ================================================================
+// BIT PLANE DECOMPOSITION
+// ================================================================
+let bpOriginalData = null;
+let bpOriginalCtx = null;
+let bpPlaneCtx = null;
+
+function initBitPlane() {
+  bpOriginalCtx = document.getElementById('original-canvas').getContext('2d');
+  bpPlaneCtx = document.getElementById('bitplane-canvas').getContext('2d');
+  generateSampleImage();
+  renderBPBars();
+}
+
+function generateSampleImage() {
+  const canvas = document.getElementById('original-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  // Draw a colorful synthetic image
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const r = Math.sin(x * 0.05) * 127 + 128;
+      const g = Math.cos(y * 0.04) * 127 + 128;
+      const b = Math.sin((x + y) * 0.03) * 127 + 128;
+      ctx.fillStyle = `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  bpOriginalData = ctx.getImageData(0, 0, W, H);
+  updateBitPlane(document.getElementById('bp-slider') ? document.getElementById('bp-slider').value : 7);
+}
+
+function loadImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('original-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      bpOriginalData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      updateBitPlane(document.getElementById('bp-slider').value);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateBitPlane(val) {
+  val = parseInt(val);
+  const el = document.getElementById('bp-value');
+  if (el) el.textContent = val;
+  const label = document.getElementById('bp-canvas-label');
+  if (label) label.textContent = `Bit Plane ${val}`;
+
+  const imp = document.getElementById('bp-importance');
+  if (imp) {
+    if (val >= 4) {
+      imp.className = 'info-box success';
+      imp.innerHTML = `✅ Plane ${val} — <strong>High importance</strong>. Contains significant visual information. <strong>Should be ENCRYPTED by HyMLCPP!</strong>`;
+    } else {
+      imp.className = 'info-box warning';
+      imp.innerHTML = `⚠️ Plane ${val} — <strong>Low importance</strong> (Least Significant Bits). Minimal visual content. <strong>Encryption can be SKIPPED to save computation.</strong>`;
+    }
+  }
+
+  if (!bpOriginalData) return;
+  const canvas = document.getElementById('bitplane-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const imgData = ctx.createImageData(W, H);
+  const src = bpOriginalData.data;
+
+  for (let i = 0; i < src.length; i += 4) {
+    // Convert to grayscale first, then extract bit plane
+    const gray = Math.floor(0.299 * src[i] + 0.587 * src[i+1] + 0.114 * src[i+2]);
+    const bit = (gray >> val) & 1;
+    const pix = bit ? 255 : 0;
+    imgData.data[i] = imgData.data[i+1] = imgData.data[i+2] = pix;
+    imgData.data[i+3] = 255;
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+function renderBPBars() {
+  const container = document.getElementById('bp-bars');
+  if (!container) return;
+  container.innerHTML = '';
+  const importance = [2, 3, 5, 9, 18, 28, 40, 55];
+  const labels = ['LSB','1','2','3','4','5','6','MSB'];
+  const colors = ['#334155','#475569','#64748b','#94a3b8','#38bdf8','#60a5fa','#818cf8','#00e5ff'];
+  importance.forEach((v, i) => {
+    const encrypt = i >= 4;
+    container.innerHTML += `
+      <div class="metric-bar-wrap">
+        <div class="metric-bar-label">
+          <span class="name">Plane ${i} (${labels[i]}) ${encrypt ? '🔐' : ''}</span>
+          <span class="val" style="color:${colors[i]}">${v}%</span>
+        </div>
+        <div class="metric-bar-track">
+          <div class="metric-bar-fill" style="width:${v}%;background:${colors[i]};"></div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// ================================================================
+// SELECTIVE ENCRYPTION
+// ================================================================
+let encChart = null;
+
+function initSelectiveEncryption() {
+  const ctx = document.getElementById('enc-chart').getContext('2d');
+  encChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Full Encrypt', 'Selective (HyMLCPP)', 'No Encrypt'],
+      datasets: [{
+        label: 'Computation Time (ms)',
+        data: [100, 48, 0],
+        backgroundColor: ['rgba(239,68,68,0.5)', 'rgba(0,229,255,0.5)', 'rgba(16,185,129,0.5)'],
+        borderColor: ['#ef4444', '#00e5ff', '#10b981'],
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' } },
+        y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+      }
+    }
+  });
+  updateSelectiveEncryption();
+}
+
+function updateSelectiveEncryption() {
+  const selective = document.getElementById('selective-toggle').checked;
+  const imgSize = parseInt(document.getElementById('img-size-slider').value);
+  const rounds = parseInt(document.getElementById('enc-rounds-slider').value);
+
+  document.getElementById('img-size-val').textContent = imgSize;
+  document.getElementById('enc-rounds-val').textContent = rounds;
+
+  const baseTime = Math.floor(imgSize * rounds * 0.02);
+  const selTime = selective ? Math.floor(baseTime * 0.5) : baseTime;
+  const dataEncrypted = selective ? '50%' : '100%';
+
+  document.getElementById('enc-time').textContent = selTime + ' ms';
+  document.getElementById('enc-time').style.color = selective ? 'var(--accent3)' : 'var(--danger)';
+  document.getElementById('enc-data').textContent = dataEncrypted;
+
+  const desc = document.getElementById('enc-mode-desc');
+  if (selective) {
+    desc.className = 'info-box success';
+    desc.textContent = '✅ Smart Mode: Only encrypting bit planes 4–7 (4 planes out of 8)';
+  } else {
+    desc.className = 'info-box danger';
+    desc.textContent = '⚠️ Full Mode: Encrypting all 8 bit planes — slower but maximum security';
+  }
+
+  if (encChart) {
+    encChart.data.datasets[0].data = [baseTime, selTime, 0];
+    encChart.update();
+  }
+}
+
+function updateAvalanche(val) {
+  document.getElementById('avalanche-val').textContent = val;
+  const hexChars = '0123456789ABCDEF';
+  const makeHex = () => Array.from({length: 6}, () => hexChars[Math.floor(Math.random()*16)] + hexChars[Math.floor(Math.random()*16)]).join(' ');
+  const orig = makeHex();
+  const changed = makeHex();
+  document.getElementById('original-cipher').textContent = orig;
+  document.getElementById('changed-cipher').textContent = changed;
+  const pct = (42 + Math.random() * 12).toFixed(1);
+  document.getElementById('avalanche-pct').textContent = pct + '%';
+}
+
+// ================================================================
+// SVM
+// ================================================================
+let svmPoints = [];
+const SVM_CANVAS_SIZE = 400;
+
+function initSVM() {
+  generateSVMPoints();
+  updateSVM();
+}
+
+function generateSVMPoints() {
+  svmPoints = [];
+  // Class 1 (Encrypt - sensitive): around center-right
+  for (let i = 0; i < 30; i++) {
+    svmPoints.push({
+      x: 0.6 + (Math.random() - 0.5) * 0.5,
+      y: 0.5 + (Math.random() - 0.5) * 0.6,
+      cls: 1
+    });
+  }
+  // Class 0 (Skip - non-sensitive): around center-left
+  for (let i = 0; i < 30; i++) {
+    svmPoints.push({
+      x: 0.3 + (Math.random() - 0.5) * 0.45,
+      y: 0.5 + (Math.random() - 0.5) * 0.6,
+      cls: 0
+    });
+  }
+}
+
+function updateSVM() {
+  const threshold = parseFloat(document.getElementById('svm-threshold').value);
+  const margin = parseFloat(document.getElementById('svm-margin').value);
+
+  document.getElementById('svm-threshold-val').textContent = threshold.toFixed(1);
+  document.getElementById('svm-margin-val').textContent = margin.toFixed(2);
+  document.getElementById('svm-margin-display').textContent = (2 / margin).toFixed(2);
+
+  const canvas = document.getElementById('svm-canvas');
+  if (!canvas) return;
+  const W = canvas.clientWidth || 400;
+  const H = 320;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(13,18,32,0.95)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#1e2d45';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 10; i++) {
+    ctx.beginPath(); ctx.moveTo(i * W/10, 0); ctx.lineTo(i * W/10, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * H/10); ctx.lineTo(W, i * H/10); ctx.stroke();
+  }
+
+  // Boundary x position based on threshold
+  const boundaryX = (0.5 + threshold * 0.08) * W;
+  const halfMargin = margin * 0.08 * W;
+
+  // Color regions
+  const gradL = ctx.createLinearGradient(0, 0, boundaryX - halfMargin, 0);
+  gradL.addColorStop(0, 'rgba(124,58,237,0.06)');
+  gradL.addColorStop(1, 'rgba(124,58,237,0.12)');
+  ctx.fillStyle = gradL;
+  ctx.fillRect(0, 0, boundaryX - halfMargin, H);
+
+  const gradR = ctx.createLinearGradient(boundaryX + halfMargin, 0, W, 0);
+  gradR.addColorStop(0, 'rgba(0,229,255,0.12)');
+  gradR.addColorStop(1, 'rgba(0,229,255,0.06)');
+  ctx.fillStyle = gradR;
+  ctx.fillRect(boundaryX + halfMargin, 0, W - boundaryX - halfMargin, H);
+
+  // Support vector margins (dashed)
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(boundaryX - halfMargin, 0); ctx.lineTo(boundaryX - halfMargin, H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(boundaryX + halfMargin, 0); ctx.lineTo(boundaryX + halfMargin, H); ctx.stroke();
+
+  // Decision boundary (solid)
+  ctx.setLineDash([]);
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 12;
+  ctx.beginPath(); ctx.moveTo(boundaryX, 0); ctx.lineTo(boundaryX, H); ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Labels
+  ctx.fillStyle = '#a78bfa';
+  ctx.font = '11px Space Mono, monospace';
+  ctx.fillText('SKIP (Z≤0)', 10, 20);
+  ctx.fillStyle = '#00e5ff';
+  ctx.fillText('ENCRYPT (Z>0)', boundaryX + halfMargin + 8, 20);
+
+  // Data points
+  let encCount = 0, skipCount = 0;
+  svmPoints.forEach(pt => {
+    const px = pt.x * W;
+    const py = pt.y * H;
+    const isEncrypt = px > boundaryX;
+    if (isEncrypt) encCount++; else skipCount++;
+
+    ctx.beginPath();
+    ctx.arc(px, py, 5, 0, Math.PI * 2);
+    if (pt.cls === 1) {
+      ctx.fillStyle = isEncrypt ? '#00e5ff' : 'rgba(0,229,255,0.35)';
+      ctx.strokeStyle = '#00e5ff';
+    } else {
+      ctx.fillStyle = isEncrypt ? 'rgba(239,68,68,0.35)' : '#ef4444';
+      ctx.strokeStyle = '#ef4444';
+    }
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  document.getElementById('svm-enc-count').textContent = encCount;
+  document.getElementById('svm-skip-count').textContent = skipCount;
+}
+
+// ================================================================
+// DDOS DETECTION
+// ================================================================
+let ddosChart = null;
+let ddosDistChart = null;
+let ddosInterval = null;
+let ddosData = [];
+let ddosLabels = [];
+let ddosThresholdVal = 60;
+let ddosAttackMode = false;
+let ddosIntensity = 2;
+let ddosAlertCount = 0;
+let ddosPaused = false;
+
+function initDDoS() {
+  // Live traffic chart
+  const ctx = document.getElementById('ddos-chart').getContext('2d');
+  ddosData = Array.from({length: 30}, () => Math.floor(Math.random() * 30 + 10));
+  ddosLabels = Array.from({length: 30}, (_, i) => `${i}s`);
+
+  ddosChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ddosLabels,
+      datasets: [
+        {
+          label: 'Network Traffic',
+          data: [...ddosData],
+          borderColor: '#00e5ff',
+          backgroundColor: 'rgba(0,229,255,0.06)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 2,
+        },
+        {
+          label: 'Alert Threshold',
+          data: Array(30).fill(ddosThresholdVal),
+          borderColor: '#ef4444',
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8', maxTicksLimit: 8 } },
+        y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' }, beginAtZero: true, max: 120 }
+      }
+    }
+  });
+
+  // Distribution chart
+  const ctx2 = document.getElementById('ddos-dist-chart').getContext('2d');
+  ddosDistChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: ['CICIDS 2017', 'Kaggle', 'AIND DDoS', 'CTU-13'],
+      datasets: [
+        {
+          label: 'Benign Traffic',
+          data: [63561, 45000, 52000, 38000],
+          backgroundColor: 'rgba(16,185,129,0.6)',
+          borderColor: '#10b981',
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+        {
+          label: 'Attack Traffic',
+          data: [40784, 28000, 35000, 22000],
+          backgroundColor: 'rgba(239,68,68,0.6)',
+          borderColor: '#ef4444',
+          borderWidth: 1,
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' } },
+        y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+      }
+    }
+  });
+
+  startDDoSSimulation();
+}
+
+function startDDoSSimulation() {
+  if (ddosInterval) clearInterval(ddosInterval);
+  ddosInterval = setInterval(() => {
+    if (ddosPaused) return;
+    let newVal;
+    if (ddosAttackMode) {
+      newVal = Math.floor(60 + Math.random() * ddosIntensity * 20);
+    } else {
+      newVal = Math.floor(10 + Math.random() * 35);
+    }
+
+    ddosData.push(newVal);
+    if (ddosData.length > 30) ddosData.shift();
+
+    const tick = parseInt(ddosLabels[ddosLabels.length - 1]) + 1;
+    ddosLabels.push(`${tick}s`);
+    if (ddosLabels.length > 30) ddosLabels.shift();
+
+    ddosChart.data.datasets[0].data = [...ddosData];
+    ddosChart.data.datasets[1].data = Array(30).fill(ddosThresholdVal);
+    ddosChart.data.labels = [...ddosLabels];
+    ddosChart.update();
+
+    document.getElementById('ddos-current-traffic').textContent = newVal;
+    document.getElementById('ddos-current-traffic').style.color = newVal > ddosThresholdVal ? 'var(--danger)' : 'var(--accent3)';
+
+    if (newVal > ddosThresholdVal) {
+      ddosAlertCount++;
+      document.getElementById('ddos-alert-count').textContent = ddosAlertCount;
+      const alertEl = document.getElementById('ddos-alert');
+      alertEl.style.display = 'block';
+      alertEl.textContent = `🚨 DDoS ATTACK DETECTED! Traffic = ${newVal} (Threshold = ${ddosThresholdVal}) — Blocking suspicious sources...`;
+    } else {
+      document.getElementById('ddos-alert').style.display = 'none';
+    }
+
+    // Update summary
+    document.getElementById('summary-traffic').textContent = newVal;
+    if (newVal > ddosThresholdVal) {
+      document.getElementById('summary-traffic-status').textContent = '⚠️ ATTACK!';
+      document.getElementById('summary-traffic-status').style.color = 'var(--danger)';
+    } else {
+      document.getElementById('summary-traffic-status').textContent = 'Normal';
+      document.getElementById('summary-traffic-status').style.color = 'var(--accent3)';
+    }
+  }, 800);
+}
+
+function updateDDoSThreshold(val) {
+  ddosThresholdVal = parseInt(val);
+  document.getElementById('ddos-threshold-val').textContent = val;
+}
+
+function updateDDoSIntensity(val) {
+  ddosIntensity = parseFloat(val);
+  document.getElementById('ddos-intensity-val').textContent = parseFloat(val).toFixed(1);
+}
+
+function toggleDDoSAttack(checked) {
+  ddosAttackMode = checked;
+  if (!checked) {
+    document.getElementById('ddos-alert').style.display = 'none';
+  }
+}
+
+function pauseDDoS() {
+  ddosPaused = !ddosPaused;
+  document.getElementById('pause-btn').textContent = ddosPaused ? '▶ Resume' : '⏸ Pause';
+}
+
+function resetDDoS() {
+  ddosAlertCount = 0;
+  ddosAttackMode = false;
+  ddosPaused = false;
+  document.getElementById('ddos-attack-toggle').checked = false;
+  document.getElementById('ddos-alert-count').textContent = 0;
+  document.getElementById('ddos-alert').style.display = 'none';
+  document.getElementById('pause-btn').textContent = '⏸ Pause';
+  ddosData = Array.from({length: 30}, () => Math.floor(Math.random() * 30 + 10));
+}
+
+// ================================================================
+// RANDOM FOREST
+// ================================================================
+let rfState = {trees: 5, attackVotes: 0, normalVotes: 0, treeData: []};
+
+function initRandomForest() {
+  updateRandomForest();
+}
+
+function updateRandomForest(treeCount) {
+  if (treeCount !== undefined) {
+    rfState.trees = parseInt(treeCount);
+    document.getElementById('rf-trees-val').textContent = treeCount;
+  }
+  const traffic = parseInt(document.getElementById('rf-traffic').value);
+  document.getElementById('rf-traffic-val').textContent = traffic;
+
+  const attackProb = 0.3 + (traffic / 10) * 0.6;
+  rfState.treeData = [];
+  let attackVotes = 0, normalVotes = 0;
+
+  for (let i = 0; i < rfState.trees; i++) {
+    const vote = Math.random() < attackProb ? 'attack' : 'normal';
+    rfState.treeData.push(vote);
+    if (vote === 'attack') attackVotes++; else normalVotes++;
+  }
+  rfState.attackVotes = attackVotes;
+  rfState.normalVotes = normalVotes;
+
+  renderRFTrees();
+}
+
+function rerandomForest() {
+  chartsInitialized['rf'] = false;
+  initRandomForest();
+}
+
+function renderRFTrees() {
+  const container = document.getElementById('rf-trees-display');
+  container.innerHTML = '';
+  rfState.treeData.forEach((vote, i) => {
+    container.innerHTML += `
+      <div class="rf-tree ${vote}" style="animation-delay:${i*0.07}s">
+        <div class="rf-tree-icon">${vote === 'attack' ? '⚠️' : '✅'}</div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">Tree ${i+1}</div>
+        <div class="rf-tree-vote">${vote.toUpperCase()}</div>
+      </div>
+    `;
+  });
+
+  document.getElementById('attack-votes').textContent = rfState.attackVotes;
+  document.getElementById('normal-votes').textContent = rfState.normalVotes;
+
+  const verdict = rfState.attackVotes > rfState.normalVotes ? 'attack' : 'normal';
+  const conf = Math.max(rfState.attackVotes, rfState.normalVotes);
+  const confPct = Math.round((conf / rfState.trees) * 100);
+
+  const verdictEl = document.getElementById('rf-verdict');
+  verdictEl.className = `rf-verdict ${verdict}`;
+  document.getElementById('rf-verdict-text').textContent = verdict === 'attack' ? '⚠️ ATTACK DETECTED' : '✅ TRAFFIC NORMAL';
+  document.getElementById('rf-confidence').textContent = `${confPct}% confidence`;
+}
+
+// ================================================================
+// DIFFERENTIAL PRIVACY
+// ================================================================
+let dpChart = null;
+let dpTradeoffChart = null;
+const DP_N = 20;
+
+function initDifferentialPrivacy() {
+  const ctx = document.getElementById('dp-chart').getContext('2d');
+  const ctx2 = document.getElementById('dp-tradeoff-chart').getContext('2d');
+
+  const labels = Array.from({length: DP_N}, (_, i) => `S${i+1}`);
+  const original = Array.from({length: DP_N}, () => Math.floor(Math.random() * 80 + 20));
+
+  dpChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Original Data',
+          data: original,
+          borderColor: '#00e5ff',
+          backgroundColor: 'rgba(0,229,255,0.08)',
+          tension: 0.4,
+          pointRadius: 3,
+          fill: false,
+        },
+        {
+          label: 'Privatized Data',
+          data: [...original],
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245,158,11,0.08)',
+          tension: 0.3,
+          pointRadius: 3,
+          fill: false,
+          borderDash: [4, 2],
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8', maxTicksLimit: 8 } },
+        y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // Tradeoff chart
+  const epsValues = [0.1, 0.5, 1, 2, 3, 5];
+  dpTradeoffChart = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: epsValues.map(e => 'ε=' + e),
+      datasets: [
+        {
+          label: 'Privacy Protection (%)',
+          data: [95, 85, 72, 55, 40, 25],
+          borderColor: '#10b981',
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Data Utility (%)',
+          data: [45, 62, 72, 83, 90, 96],
+          borderColor: '#f59e0b',
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' } },
+        y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' }, min: 0, max: 100 }
+      }
+    }
+  });
+
+  window._dpOriginal = original;
+  updateDifferentialPrivacy();
+}
+
+function updateDifferentialPrivacy() {
+  const epsilon = parseFloat(document.getElementById('dp-epsilon').value);
+  document.getElementById('dp-epsilon-val').textContent = epsilon.toFixed(2);
+
+  if (!window._dpOriginal || !dpChart) return;
+
+  const showOrig = document.getElementById('dp-show-original').checked;
+  const showNoisy = document.getElementById('dp-show-noisy').checked;
+
+  // Laplace noise: scale = sensitivity / epsilon
+  const noisyData = window._dpOriginal.map(v => {
+    const noise = laplaceNoise(1 / epsilon);
+    return Math.max(0, Math.round(v + noise));
+  });
+
+  dpChart.data.datasets[0].hidden = !showOrig;
+  dpChart.data.datasets[1].data = noisyData;
+  dpChart.data.datasets[1].hidden = !showNoisy;
+  dpChart.update();
+
+  // Privacy and utility scores
+  let privLabel, privColor, utilPct;
+  if (epsilon < 0.3) { privLabel = 'VERY HIGH'; privColor = 'var(--accent3)'; utilPct = 40; }
+  else if (epsilon < 1) { privLabel = 'HIGH'; privColor = 'var(--accent3)'; utilPct = 65; }
+  else if (epsilon < 2) { privLabel = 'MODERATE'; privColor = 'var(--accent4)'; utilPct = 75; }
+  else if (epsilon < 4) { privLabel = 'LOW'; privColor = 'var(--accent4)'; utilPct = 88; }
+  else { privLabel = 'VERY LOW'; privColor = 'var(--danger)'; utilPct = 96; }
+
+  document.getElementById('dp-privacy-score').textContent = privLabel;
+  document.getElementById('dp-privacy-score').style.color = privColor;
+  document.getElementById('dp-utility-score').textContent = utilPct + '%';
+
+  const infoEl = document.getElementById('dp-privacy-level');
+  const epStr = epsilon.toFixed(2);
+  if (epsilon < 0.5) {
+    infoEl.className = 'info-box success';
+    infoEl.textContent = `🔒 ε = ${epStr} — HIGH privacy. Strong noise, individual data well hidden.`;
+  } else if (epsilon < 2) {
+    infoEl.className = 'info-box';
+    infoEl.textContent = `⚖️ ε = ${epStr} — Balanced privacy/utility. Moderate noise level.`;
+  } else {
+    infoEl.className = 'info-box warning';
+    infoEl.textContent = `📉 ε = ${epStr} — LOWER privacy. Data mostly visible, minimal noise.`;
+  }
+
+  // Update summary
+  document.getElementById('summary-privacy').textContent = privLabel;
+}
+
+function laplaceNoise(scale) {
+  const u = Math.random() - 0.5;
+  return -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
+}
+
+// ================================================================
+// BAYESIAN PREDICTION
+// ================================================================
+const bayesFactors = {
+  htraffic: { active: false, weight: 0.35, label: 'High Traffic Volume' },
+  hpacket: { active: false, weight: 0.28, label: 'High Packet Rate' },
+  periodic: { active: false, weight: 0.22, label: 'Periodic Connections' },
+  geo: { active: false, weight: 0.18, label: 'Multiple Geo Sources' },
+  port: { active: false, weight: 0.30, label: 'Port Scanning' },
+  syn: { active: false, weight: 0.40, label: 'SYN Flood Pattern' },
+};
+
+function initBayesian() {
+  renderBayesEvidenceBars();
+  updateBayesian();
+}
+
+function toggleBayesFactor(key) {
+  bayesFactors[key].active = !bayesFactors[key].active;
+  const el = document.getElementById(`bf-${key}`);
+  if (el) el.classList.toggle('active', bayesFactors[key].active);
+  updateBayesian();
+}
+
+function updateBayesian() {
+  // Bayesian posterior: P(attack) = prior * product of likelihoods
+  const prior = 0.05;
+  let logOdds = Math.log(prior / (1 - prior));
+  Object.values(bayesFactors).forEach(f => {
+    if (f.active) logOdds += Math.log(f.weight / (1 - f.weight * 0.5));
+  });
+  const posterior = 1 / (1 + Math.exp(-logOdds));
+  const pct = Math.min(99, Math.max(1, Math.round(posterior * 100)));
+
+  document.getElementById('bayes-prob-value').textContent = pct + '%';
+
+  const fillEl = document.getElementById('bayes-prob-fill');
+  fillEl.style.width = pct + '%';
+
+  let color, verdict;
+  if (pct < 20) { color = '#10b981'; verdict = '✅ LOW RISK — Normal network activity'; }
+  else if (pct < 50) { color = '#f59e0b'; verdict = '⚠️ MODERATE RISK — Monitor closely'; }
+  else if (pct < 75) { color = '#f97316'; verdict = '🔶 HIGH RISK — Prepare defensive measures'; }
+  else { color = '#ef4444'; verdict = '🚨 CRITICAL RISK — DDoS attack highly probable!'; }
+
+  fillEl.style.background = color;
+  document.getElementById('bayes-prob-value').style.color = color;
+
+  const verdictEl = document.getElementById('bayes-verdict');
+  verdictEl.textContent = verdict;
+  verdictEl.className = pct < 20 ? 'info-box success' : pct < 50 ? 'info-box warning' : 'info-box danger';
+
+  // Update summary
+  document.getElementById('summary-attack-prob').textContent = pct + '%';
+  document.getElementById('summary-attack-status').textContent = pct < 20 ? 'Low Risk' : pct < 50 ? '⚠️ Moderate' : '🚨 High Risk';
+  document.getElementById('summary-attack-status').style.color = color;
+
+  renderBayesEvidenceBars();
+}
+
+function renderBayesEvidenceBars() {
+  const container = document.getElementById('bayes-evidence-bars');
+  if (!container) return;
+  container.innerHTML = '';
+  Object.entries(bayesFactors).forEach(([key, f]) => {
+    const wPct = Math.round(f.weight * 100);
+    container.innerHTML += `
+      <div class="metric-bar-wrap">
+        <div class="metric-bar-label">
+          <span class="name" style="color:${f.active ? 'var(--accent)' : 'var(--text3)'}">${f.label} ${f.active ? '✓' : ''}</span>
+          <span class="val" style="color:${f.active ? 'var(--accent)' : 'var(--text3)'}">${wPct}%</span>
+        </div>
+        <div class="metric-bar-track">
+          <div class="metric-bar-fill" style="width:${f.active ? wPct : 0}%;background:${f.active ? 'var(--accent)' : 'var(--bg3)'};transition:width 0.4s;"></div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// ================================================================
+// PERFORMANCE METRICS
+// ================================================================
+let metricsChart = null;
+let compChart = null;
+
+const datasetProfiles = {
+  cicids: { base: [99.9, 99.98, 99.90, 99.94], name: 'CICIDS 2017' },
+  kaggle: { base: [99.1, 98.8, 99.0, 98.9], name: 'Kaggle Dataset' },
+  aind: { base: [99.5, 99.3, 99.2, 99.25], name: 'AIND DDoS' },
+  ctu: { base: [98.8, 98.5, 98.7, 98.6], name: 'CTU-13' },
+};
+
+function initMetrics() {
+  const ctx = document.getElementById('metrics-chart').getContext('2d');
+  metricsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Accuracy', 'Precision', 'Recall', 'F1 Score'],
+      datasets: [{
+        label: 'HyMLCPP (%)',
+        data: [99.9, 99.98, 99.90, 99.94],
+        backgroundColor: [
+          'rgba(0,229,255,0.6)',
+          'rgba(124,58,237,0.6)',
+          'rgba(16,185,129,0.6)',
+          'rgba(245,158,11,0.6)',
+        ],
+        borderColor: ['#00e5ff', '#7c3aed', '#10b981', '#f59e0b'],
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' } },
+        y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' }, min: 90, max: 100 }
+      }
+    }
+  });
+
+  const ctx2 = document.getElementById('comparison-chart').getContext('2d');
+  compChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: ['HyMLCPP', 'MLPAM', 'Geno-PPML', 'HRFLR', 'HELR', 'ML-Crypto'],
+      datasets: [
+        {
+          label: 'Accuracy (%)',
+          data: [99.9, 97.2, 96.5, 98.1, 95.8, 94.3],
+          backgroundColor: 'rgba(0,229,255,0.7)',
+          borderColor: '#00e5ff',
+          borderRadius: 4,
+        },
+        {
+          label: 'Precision (%)',
+          data: [99.98, 96.8, 95.2, 97.6, 94.1, 93.5],
+          backgroundColor: 'rgba(124,58,237,0.7)',
+          borderColor: '#7c3aed',
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' } },
+        y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8' }, min: 88, max: 100 }
+      }
+    }
+  });
+
+  updateMetrics();
+}
+
+function updateMetrics() {
+  const trainSize = parseInt(document.getElementById('train-size').value);
+  document.getElementById('train-size-val').textContent = trainSize + '%';
+  const dataset = document.getElementById('dataset-select').value;
+  const profile = datasetProfiles[dataset];
+  
+  // Simulate performance degradation with smaller training size
+  const factor = 0.5 + (trainSize / 100) * 0.5;
+  const metrics = profile.base.map(v => {
+    const degraded = 85 + (v - 85) * factor + (Math.random() - 0.5) * 0.3;
+    return Math.min(v, Math.max(85, parseFloat(degraded.toFixed(2))));
+  });
+
+  const names = ['Accuracy', 'Precision', 'Recall', 'F1 Score'];
+  const colors = ['var(--accent)', '#a78bfa', 'var(--accent3)', 'var(--accent4)'];
+  const container = document.getElementById('metrics-bars');
+  container.innerHTML = '';
+  metrics.forEach((v, i) => {
+    container.innerHTML += `
+      <div class="metric-bar-wrap">
+        <div class="metric-bar-label">
+          <span class="name">${names[i]}</span>
+          <span class="val">${v.toFixed(2)}%</span>
+        </div>
+        <div class="metric-bar-track">
+          <div class="metric-bar-fill" style="width:${(v-85)*6.67}%;background:${colors[i]};"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  if (metricsChart) {
+    metricsChart.data.datasets[0].data = metrics;
+    metricsChart.update();
+  }
+}
+
+// ================================================================
+// SUMMARY RADAR CHART
+// ================================================================
+function initSummary() {
+  const ctx = document.getElementById('summary-radar-chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Accuracy', 'Privacy', 'Speed', 'Scalability', 'Prediction', 'Robustness'],
+      datasets: [
+        {
+          label: 'HyMLCPP',
+          data: [99, 88, 82, 78, 90, 85],
+          borderColor: '#00e5ff',
+          backgroundColor: 'rgba(0,229,255,0.12)',
+          pointBackgroundColor: '#00e5ff',
+        },
+        {
+          label: 'Prior Methods (avg)',
+          data: [95, 72, 70, 65, 40, 68],
+          borderColor: '#7c3aed',
+          backgroundColor: 'rgba(124,58,237,0.10)',
+          pointBackgroundColor: '#7c3aed',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      scales: {
+        r: {
+          grid: { color: '#1e2d45' },
+          ticks: { color: '#64748b', backdropColor: 'transparent', stepSize: 20 },
+          pointLabels: { color: '#94a3b8', font: { size: 11 } },
+          min: 0, max: 100,
+        }
+      }
+    }
+  });
+}
+
+// ================================================================
+// INIT
+// ================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Intro section charts are static, no chart init needed
+  // But initialize bit plane bars once DOM is ready
+  setTimeout(() => {
+    showSection('intro');
+  }, 100);
+});
+</script>
+</body>
+</html>
